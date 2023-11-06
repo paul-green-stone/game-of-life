@@ -1,0 +1,11 @@
+{
+    "SDL2": [
+        "SDL_INIT_VIDEO",
+        "SDL_INIT_EVENTS"
+    ],
+    "SDL_image": [
+        "IMG_INIT_JPG",
+        "IMG_INIT_PNG"
+    ],
+    "FPS": 60
+}

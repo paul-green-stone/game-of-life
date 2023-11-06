@@ -1,0 +1,13 @@
+{
+    "cell_size": 100,
+
+    "width": 640,
+    "height": 480,
+
+    "is_grid": 1,
+
+    "cell_color": [255, 0, 0, 255],
+    "grid_color": [0, 0, 0, 255],
+
+    "type": 1
+}
