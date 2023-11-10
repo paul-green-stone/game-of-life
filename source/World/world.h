@@ -3,6 +3,8 @@
 
 /* ================================================================ */
 
+#define RAND_RANGE(min, max) (min + rand() / (RAND_MAX / (max - min + 1) + 1))
+
 struct world {
 
     size_t cell_size;
@@ -22,7 +24,12 @@ struct world {
 
     int type;           /* How to treat the world edges. 1 - wrap the edges; 2 - what's beyond the edges is always dead; 3 - what's beyond the edges is always alive */
 
-    char** world;       /* A two-dimensional array of cells */
+    unsigned char** previous;    /* A two-dimensional array of previous generation */
+    unsigned char** current;     /* A two-dimensional array of current generation */
+
+    Timer_t clock;      /* A clock controlling the speed of generations */
+
+    float rate;
 };
 
 typedef struct world World;
@@ -57,7 +64,15 @@ extern void World_log(const World_t w);
 
 /* ================================ */
 
-extern void World_log_world(const World_t w);
+extern void World_log_generation(const World_t w);
+
+/* ================================ */
+
+extern void World_present(const World_t world, const Window_t w);
+
+/* ================================ */
+
+extern void World_randomize(const World_t w, int c);
 
 /* ================================================================ */
 

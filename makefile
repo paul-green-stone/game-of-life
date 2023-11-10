@@ -3,7 +3,7 @@ LD			:= ld
 CFLAGS 		:= -g -c
 ALL_CFLAGS 	:= -Wall -Wextra -pedantic-errors -O2
 
-LDFLAGS		:= -L/usr/local/lib/ -llilen -lSDL2 -lSDL2_image
+LDFLAGS		:= -L/usr/local/lib/user -llilen -lSDL2 -lSDL2_image
 
 PROG		:= a
 
@@ -17,7 +17,7 @@ WORLD		:= $(addprefix source/World/, world.c world.h)
 # ================================================================ #
 
 $(PROG): $(OBJS)
-	$(CC) -o $@.out $^	$(LDFLAGS)
+	$(CC) -o $@.out $^ $(LDFLAGS)
 
 $(OBJDIR)/main.o: $(MAIN) $(INCLUDE)
 	$(CC) -o $@ $(CFLAGS) $(ALL_CFLAGS) $<
