@@ -1,8 +1,8 @@
 {
-    "cell_size": 40,
+    "cell_size": 100,
 
-    "width": 640,
-    "height": 480,
+    "width": 400,
+    "height": 400,
 
     "is_grid": 1,
 
@@ -11,7 +11,7 @@
 
     "type": 1,
     
-    "rate": 5,
+    "rate": 1,
 
     "life": []
 }

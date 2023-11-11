@@ -74,6 +74,10 @@ extern void World_present(const World_t world, const Window_t w);
 
 extern void World_randomize(const World_t w, int c);
 
+/* ================================ */
+
+extern void World_evolve(const World_t w);
+
 /* ================================================================ */
 
 #endif /* GOL_WORLD_H */
