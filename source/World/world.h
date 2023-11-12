@@ -30,6 +30,8 @@ struct world {
     Timer_t clock;      /* A clock controlling the speed of generations */
 
     float rate;
+
+    size_t start;       /* Number of live cells at the start */
 };
 
 typedef struct world World;

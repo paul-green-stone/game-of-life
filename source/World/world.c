@@ -195,6 +195,43 @@ static int Do_dimensions(int mode, const World_t world, const cJSON* root) {
 
 /* ================================================================ */
 
+static int Do_start(int mode, const World_t world, const cJSON* root) {
+
+    cJSON* data = NULL;
+    
+    /* ======================= Check input data ======================= */
+    if (check(mode, world, root) == EXIT_FAILURE) {
+        return EXIT_FAILURE;
+    }
+
+    switch (mode) {
+
+        case LOAD:
+            
+            /* =================== Loading data from a file =================== */
+            if ((data = cJSON_GetObjectItemCaseSensitive(root, "start")) == NULL) {
+                return EXIT_FAILURE;
+            }
+
+            if (!cJSON_IsNumber(data)) {
+                return EXIT_FAILURE;
+            }
+
+            world->start = data->valueint;
+
+            break ;
+
+        case SAVE:
+
+            /* =================== Saving data into a file ==================== */
+            break ;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+/* ================================================================ */
+
 static int Do_grid(int mode, const World_t world, const cJSON* root) {
 
     cJSON* data = NULL;
@@ -445,6 +482,11 @@ static int read_file(const char* filename, const World_t world) {
         goto CLEANUP;
     }
 
+    /* ==================== Retrieving start info ===================== */
+    if (Do_start(LOAD, world, root) == EXIT_FAILURE) {
+        goto CLEANUP;
+    }
+
     /* ===================== Retrieving grid info ===================== */
     if (Do_grid(LOAD, world, root) == EXIT_FAILURE) {
         goto CLEANUP;
@@ -645,6 +687,8 @@ void World_log_generation(const World_t w) {
 
         printf("\n");
     }
+
+    return ;
 }
 
 /* ================================================================ */  
@@ -755,11 +799,14 @@ void World_evolve(const World_t w) {
             }
             /* Any live cell with more than three live neighbours dies, as if by overpopulation. */
             else if (w->previous[row][column] == 1 && acc > 3) {
-                w->previous[row][column] = 0;
+                w->current[row][column] = 0;
             }
             /* Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction. */
-            if (w->previous[row][column] == 0 && acc == 3) {
-                w->previous[row][column] = 1;
+            else if (w->previous[row][column] == 0 && acc == 3) {
+                w->current[row][column] = 1;
+            }
+            else {
+                w->current[row][column]= w->previous[row][column];
             }
         }
     }

@@ -9,77 +9,76 @@ int main(int argc, char** argv) {
 
     srand((unsigned) time(0));
 
-    // if ((LilEn_init("settings.json")) == EXIT_FAILURE) {
+    if ((LilEn_init("settings.json")) == EXIT_FAILURE) {
 
-    //     LilEn_print_error();
+        LilEn_print_error();
 
-    //     exit(EXIT_FAILURE);
-    // }
+        exit(EXIT_FAILURE);
+    }
 
-    // if ((window = Window_new("Game of Life", world->width, world->height, SDL_WINDOW_SHOWN, SDL_RENDERER_ACCELERATED)) == NULL) {
+    if ((window = Window_new("Game of Life", world->width, world->height, SDL_WINDOW_SHOWN, SDL_RENDERER_ACCELERATED)) == NULL) {
 
-    //     LilEn_print_error();
-    //     LilEn_quit();
+        LilEn_print_error();
+        LilEn_quit();
 
-    //     exit(EXIT_FAILURE);
-    // }
+        exit(EXIT_FAILURE);
+    }
 
-    world->current[1][1] = 1;
-    world->current[1][0] = 1;
+    SDL_SetRenderDrawBlendMode(window->renderer, SDL_BLENDMODE_BLEND);
 
-    World_log_generation(world);
+    if (world->start > 0) {
+        World_randomize(world, world->start);
+    }
 
-    World_evolve(world);
+    while (running) {
 
-    // World_randomize(world, 12);
+        Timer_tick(g_timer);
+        Timer_tick(world->clock);
 
-    // while (running) {
+        while (SDL_PollEvent(&e)) {
 
-    //     Timer_tick(g_timer);
-    //     Timer_tick(world->clock);
+            switch (e.type) {
 
-    //     while (SDL_PollEvent(&e)) {
+                case SDL_QUIT:
 
-    //         switch (e.type) {
+                    running = !running;
 
-    //             case SDL_QUIT:
+                    break ;
+            }
+        }
 
-    //                 running = !running;
+        if (Timer_is_ready(g_timer)) {
 
-    //                 break ;
-    //         }
-    //     }
+            LilEn_log_FPS();
 
-    //     if (Timer_is_ready(g_timer)) {
+            LilEn_set_colorHEX(0xffffff);
 
-    //         LilEn_set_colorHEX(0xffffff);
+            Window_clear(NULL);
 
-    //         Window_clear(NULL);
+            LilEn_set_colorRGB(world->c_color.r, world->c_color.g, world->c_color.b, world->c_color.a);
+            World_present(world, NULL);
 
-    //         LilEn_set_colorRGB(world->c_color.r, world->c_color.g, world->c_color.b, world->c_color.a);
-    //         World_present(world, NULL);
+            if (world->is_grid) {
 
-    //         if (world->is_grid) {
+                LilEn_set_colorRGB(world->g_color.r, world->g_color.g, world->g_color.b, world->g_color.a);
 
-    //             LilEn_set_colorRGB(world->g_color.r, world->g_color.g, world->g_color.b, world->g_color.a);
+                Window_display_grid(NULL, world->cell_size);
+            }
 
-    //             Window_display_grid(NULL, world->cell_size);
-    //         }
+            Window_update(window);
 
-    //         Window_update(window);
+            Timer_reset(g_timer);
+        }
 
-    //         Timer_reset(g_timer);
-    //     }
+        if (Timer_is_ready(world->clock)) {
 
-    //     if (Timer_is_ready(world->clock)) {
+            Timer_reset(world->clock);
 
-    //         Timer_reset(world->clock);
+            World_evolve(world);
+        }
+    }
 
-    //         World_evolve(world);
-    //     }
-    // }
-
-    // LilEn_quit();
+    LilEn_quit();
 
     World_destroy(&world);
 
