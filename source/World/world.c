@@ -7,21 +7,15 @@
 /* ============================ STATIC ============================ */
 /* ================================================================ */
 
-static int check(int m, const World_t w, const cJSON* r) {
+static const cJSON* Data_load(const char* name, const cJSON* root, cJSON_bool (check)(const cJSON* const)) {
 
-    if ((m < 0) || (m > 1)) {
-        return EXIT_FAILURE;
-    }
-    
-    if (w == NULL) {
-        return EXIT_FAILURE;
-    }
+    cJSON* data = NULL;
 
-    if (r == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
+    return
+        (root == NULL) ? 
+            NULL : (name == NULL) ? 
+                root : (check((data = cJSON_GetObjectItemCaseSensitive(root, name)))) ? 
+                    data : NULL;
 }
 
 /**
@@ -109,346 +103,7 @@ static int swap_2D_array(const World_t w) {
 
     return EXIT_SUCCESS;
 }
-/* ================================================================ */
 
-static int Do_cell_size(int mode, const World_t world, const cJSON* root) {
-
-    cJSON* data = NULL;
-    
-    /* ======================= Check input data ======================= */
-    if (check(mode, world, root) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-
-    switch (mode) {
-
-        case LOAD:
-            
-            /* =================== Loading data from a file =================== */
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "cell_size")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsNumber(data)) {
-                return EXIT_FAILURE;
-            }
-
-            world->cell_size = data->valueint;
-
-            break ;
-
-        case SAVE:
-
-            /* =================== Saving data into a file ==================== */
-            break ;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-/* ================================================================ */
-
-static int Do_dimensions(int mode, const World_t world, const cJSON* root) {
-
-    cJSON* data = NULL;
-    
-    /* ======================= Check input data ======================= */
-    if (check(mode, world, root) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-
-    switch (mode) {
-
-        case LOAD:  
-            
-            /* =================== Loading data from a file =================== */
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "width")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsNumber(data)) {
-                return EXIT_FAILURE;
-            }
-
-            world->width = data->valueint;
-
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "height")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsNumber(data)) {
-                return EXIT_FAILURE;
-            }
-
-            world->height = data->valueint;
-
-            break ;
-
-        case SAVE:
-
-            /* =================== Saving data into a file ==================== */
-            break ;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-/* ================================================================ */
-
-static int Do_start(int mode, const World_t world, const cJSON* root) {
-
-    cJSON* data = NULL;
-    
-    /* ======================= Check input data ======================= */
-    if (check(mode, world, root) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-
-    switch (mode) {
-
-        case LOAD:
-            
-            /* =================== Loading data from a file =================== */
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "start")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsNumber(data)) {
-                return EXIT_FAILURE;
-            }
-
-            world->start = data->valueint;
-
-            break ;
-
-        case SAVE:
-
-            /* =================== Saving data into a file ==================== */
-            break ;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-/* ================================================================ */
-
-static int Do_grid(int mode, const World_t world, const cJSON* root) {
-
-    cJSON* data = NULL;
-    
-    /* ======================= Check input data ======================= */
-    if (check(mode, world, root) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-
-    switch (mode) {
-
-        case LOAD:
-            
-            /* =================== Loading data from a file =================== */
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "is_grid")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsNumber(data)) {
-                return EXIT_FAILURE;
-            }
-
-            world->is_grid = data->valueint;
-
-            break ;
-
-        case SAVE:
-
-            /* =================== Saving data into a file ==================== */
-            break ;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-/* ================================================================ */
-
-static int Do_colors(int mode, const World_t world, const cJSON* root) {
-
-    cJSON* data = NULL;
-    size_t array_size = 0;
-    size_t i = 0;
-    
-    /* ======================= Check input data ======================= */
-    if (check(mode, world, root) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-
-    switch (mode) {
-
-        case LOAD:
-            
-            /* =================== Loading data from a file =================== */
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "cell_color")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsArray(data)) {
-                return EXIT_FAILURE;
-            }
-
-            /* Get the size of the retrieved array */
-            array_size = (size_t) cJSON_GetArraySize(data);
-
-            for (i = 0; i < array_size; i++) {
-
-                cJSON* item = cJSON_GetArrayItem(data, i);
-
-                if (item == NULL) {
-                    continue ;
-                }
-
-                switch (i) {
-
-                    case 0:
-                        world->c_color.r = item->valueint;
-                        break ;
-
-                    case 1:
-                        world->c_color.g = item->valueint;
-                        break ;
-
-                    case 2:
-                        world->c_color.b = item->valueint;
-                        break ;
-
-                    case 3:
-                        world->c_color.a = item->valueint;
-                        break ;
-                }
-            }
-
-            /* ================================ */
-
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "grid_color")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsArray(data)) {
-                return EXIT_FAILURE;
-            }
-
-            /* Get the size of the retrieved array */
-            array_size = (size_t) cJSON_GetArraySize(data);
-
-            for (i = 0; i < array_size; i++) {
-
-                cJSON* item = cJSON_GetArrayItem(data, i);
-
-                if (item == NULL) {
-                    continue ;
-                }
-
-                switch (i) {
-
-                    case 0:
-                        world->g_color.r = item->valueint;
-                        break ;
-
-                    case 1:
-                        world->g_color.g = item->valueint;
-                        break ;
-
-                    case 2:
-                        world->g_color.b = item->valueint;
-                        break ;
-
-                    case 3:
-                        world->g_color.a = item->valueint;
-                        break ;
-                }
-            }
-
-            break ;
-
-        case SAVE:
-
-            /* =================== Saving data into a file ==================== */
-            break ;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-/* ================================================================ */
-
-static int Do_type(int mode, const World_t world, const cJSON* root) {
-
-    cJSON* data = NULL;
-
-    /* ======================= Check input data ======================= */
-    if (check(mode, world, root) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-
-    switch (mode) {
-
-        case LOAD:
-            
-            /* =================== Loading data from a file =================== */
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "type")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsNumber(data)) {
-                return EXIT_FAILURE;
-            }
-
-            world->type = data->valueint;
-
-            break ;
-
-        case SAVE:
-
-            /* =================== Saving data into a file ==================== */
-            break ;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-/* ================================================================ */
-
-static int Do_rate(int mode, const World_t world, const cJSON* root) {
-
-    cJSON* data = NULL;
-    
-    /* ======================= Check input data ======================= */
-    if (check(mode, world, root) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-
-    switch (mode) {
-
-        case LOAD:
-            
-            /* =================== Loading data from a file =================== */
-            if ((data = cJSON_GetObjectItemCaseSensitive(root, "rate")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            if (!cJSON_IsNumber(data)) {
-                return EXIT_FAILURE;
-            }
-
-            world->rate = data->valueint;
-
-            break ;
-
-        case SAVE:
-
-            /* =================== Saving data into a file ==================== */
-            break ;
-    }
-
-    return EXIT_SUCCESS;
-}
 /* ================================================================ */
 
 static int read_file(const char* filename, const World_t world) {
@@ -457,6 +112,8 @@ static int read_file(const char* filename, const World_t world) {
     char* input = NULL;
     /* Parsed JSON object */
     cJSON* root = NULL;
+
+    cJSON* data = NULL;
 
     if (world == NULL) {
         return EXIT_FAILURE;
@@ -473,34 +130,15 @@ static int read_file(const char* filename, const World_t world) {
     }
 
     /* ==================== Retrieving a cell size ==================== */
-    if (Do_cell_size(LOAD, world, root) == EXIT_FAILURE) {
-        goto CLEANUP;
-    }
+    data = (cJSON*) Data_load("cell_size", root, cJSON_IsNumber);
+    world->cell_size = (data) ? data->valueint : 4;
 
     /* ================= Retrieving width and height ================== */
-    if (Do_dimensions(LOAD, world, root) == EXIT_FAILURE) {
-        goto CLEANUP;
-    }
+    data = (cJSON*) Data_load("width", root, cJSON_IsNumber);
+    world->width = (data) ? data->valueint : 400;
 
-    /* ==================== Retrieving start info ===================== */
-    if (Do_start(LOAD, world, root) == EXIT_FAILURE) {
-        goto CLEANUP;
-    }
-
-    /* ===================== Retrieving grid info ===================== */
-    if (Do_grid(LOAD, world, root) == EXIT_FAILURE) {
-        goto CLEANUP;
-    }
-
-    /* ====================== Retrieving colors ======================= */
-    if (Do_colors(LOAD, world, root) == EXIT_FAILURE) {
-        goto CLEANUP;
-    }
-
-    /* ==================== Retrieving world type ===================== */
-    if (Do_type(LOAD, world, root) == EXIT_FAILURE) {
-        goto CLEANUP;
-    }
+    data = (cJSON*) Data_load("height", root, cJSON_IsNumber);
+    world->height = (data) ? data->valueint : 400;
 
     /* ================= Adjusting sizes of the world ================= */
     world->rows = world->height / world->cell_size;
@@ -518,10 +156,44 @@ static int read_file(const char* filename, const World_t world) {
         world->height -= r;
     }
 
-    /* ==================== Retrieving world rate ===================== */
-    if (Do_rate(LOAD, world, root) == EXIT_FAILURE) {
-        goto CLEANUP;
+    /* ==================== Retrieving start info ===================== */
+    data = (cJSON*) Data_load("start", root, cJSON_IsNumber);
+
+    /* Out of the whole number of cells, make approximately 10% of them to be alive */
+    world->start = (data) ? data->valueint : (int) (world->rows * world->columns * 0.1);
+
+    /* ===================== Retrieving grid info ===================== */
+    data = (cJSON*) Data_load("grid", root, cJSON_IsNumber);
+    world->is_grid = (data) ? data->valueint : 1;
+
+    /* ====================== Retrieving colors ======================= */
+    data = (cJSON*) Data_load("cell_color", root, cJSON_IsArray);
+
+    if (cJSON_GetArraySize(data) >= 4) {
+        world->c_color = (SDL_Color) {cJSON_GetArrayItem(data, 0)->valueint, cJSON_GetArrayItem(data, 1)->valueint, cJSON_GetArrayItem(data, 2)->valueint, cJSON_GetArrayItem(data, 3)->valueint};
     }
+    else {
+        world->c_color = (SDL_Color) {255, 0, 0, 255};
+    }
+
+    /* ================================ */
+
+    data = (cJSON*) Data_load("grid_color", root, cJSON_IsArray);
+
+    if (cJSON_GetArraySize(data) >= 4) {
+        world->g_color = (SDL_Color) {cJSON_GetArrayItem(data, 0)->valueint, cJSON_GetArrayItem(data, 1)->valueint, cJSON_GetArrayItem(data, 2)->valueint, cJSON_GetArrayItem(data, 3)->valueint};
+    }
+    else {
+        world->g_color = (SDL_Color) {0, 0, 0, 255};
+    }
+
+    /* ==================== Retrieving world type ===================== */
+    data = (cJSON*) Data_load("type", root, cJSON_IsNumber);
+    world->type = (data) ? data->valueint : 1;
+
+    /* ==================== Retrieving world rate ===================== */
+    data = (cJSON*) Data_load("rate", root, cJSON_IsNumber);
+    world->rate = (data) ? data->valueint : 5;
 
     /* ================================ */
 
