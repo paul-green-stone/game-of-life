@@ -30,6 +30,8 @@ int main(int argc, char** argv) {
         World_randomize(world, world->start);
     }
 
+    World_log(world);
+
     while (running) {
 
         Timer_tick(g_timer);
@@ -55,12 +57,12 @@ int main(int argc, char** argv) {
 
             Window_clear(NULL);
 
-            LilEn_set_colorRGB(world->c_color.r, world->c_color.g, world->c_color.b, world->c_color.a);
+            LilEn_set_colorRGB(world->c_color[0], world->c_color[1], world->c_color[2], world->c_color[3]);
             World_present(world, NULL);
 
             if (world->is_grid) {
 
-                LilEn_set_colorRGB(world->g_color.r, world->g_color.g, world->g_color.b, world->g_color.a);
+                LilEn_set_colorRGB(world->g_color[0], world->g_color[1], world->g_color[2], world->g_color[3]);
 
                 Window_display_grid(NULL, world->cell_size);
             }
@@ -79,6 +81,9 @@ int main(int argc, char** argv) {
     }
 
     LilEn_quit();
+
+    World_log(world);
+    World_save("save", world);
 
     World_destroy(&world);
 

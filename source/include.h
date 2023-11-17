@@ -3,6 +3,8 @@
 
 /* ================================================================ */
 
+#include <sys/stat.h>
+#include <dirent.h>
 #include <LilEn/LilEn.h>
 
 #include "World/world.h"

@@ -3,8 +3,74 @@
 #define LOAD 0
 #define SAVE 1
 
+/* Little buffer size */
+#define LBUFF 128
+/* Maximum filename size */
+#define MAX_FILENAME 32
+
+#define length(str) (strlen(str) + 1)
+
 /* ================================================================ */
 /* ============================ STATIC ============================ */
+/* ================================================================ */
+
+static int save_array(const cJSON* root, const World_t w) {
+
+    cJSON* array = NULL;
+    size_t row, column;
+    cJSON* r = NULL;
+    cJSON* data = NULL;
+
+    if ((array = cJSON_CreateArray()) == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    for (row = 0; row < w->rows; row++) {
+
+        if ((r = cJSON_CreateArray()) == NULL) {
+            return EXIT_FAILURE;
+        }
+
+        for (column = 0; column < w->columns; column++) {
+
+            data = (data = cJSON_CreateNumber(w->current[row][column])) ? data : NULL;
+            cJSON_AddItemToArray(r, data);
+        }
+
+        cJSON_AddItemToArray(array, r);
+    }
+
+    cJSON_AddItemToObject((cJSON*) root, "current", array);
+
+    return EXIT_SUCCESS;
+}
+
+/**
+ * Creates a directory that stores saved worlds if it doesn't exist yet.
+ * Create a file to store the current world data.
+*/
+static FILE* create_file(const char* filename) {
+
+    FILE* file = NULL;
+
+    char buffer[LBUFF];
+
+    strncpy(buffer, "saves/", length("saves/"));
+
+    if ((opendir(buffer) == NULL) && (mkdir(buffer, 0777) != 0)) {
+        return NULL;
+    }
+
+    strncat(buffer, filename, MAX_FILENAME);
+    strncat(buffer, ".json", length(".json"));
+
+    if ((file = fopen(buffer, "w")) == NULL) {
+        return NULL;
+    }
+
+    return file;
+}
+
 /* ================================================================ */
 
 static const cJSON* Data_load(const char* name, const cJSON* root, cJSON_bool (check)(const cJSON* const)) {
@@ -17,6 +83,8 @@ static const cJSON* Data_load(const char* name, const cJSON* root, cJSON_bool (c
                 root : (check((data = cJSON_GetObjectItemCaseSensitive(root, name)))) ? 
                     data : NULL;
 }
+
+/* ================================================================ */
 
 /**
  * Deallocate a 2-dimensional array
@@ -170,10 +238,18 @@ static int read_file(const char* filename, const World_t world) {
     data = (cJSON*) Data_load("cell_color", root, cJSON_IsArray);
 
     if (cJSON_GetArraySize(data) >= 4) {
-        world->c_color = (SDL_Color) {cJSON_GetArrayItem(data, 0)->valueint, cJSON_GetArrayItem(data, 1)->valueint, cJSON_GetArrayItem(data, 2)->valueint, cJSON_GetArrayItem(data, 3)->valueint};
+
+        world->c_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
+        world->c_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
+        world->c_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
+        world->c_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
     }
     else {
-        world->c_color = (SDL_Color) {255, 0, 0, 255};
+
+        world->c_color[0] = 255;
+        world->c_color[1] = 0;
+        world->c_color[3] = 0;
+        world->c_color[2] = 255;
     }
 
     /* ================================ */
@@ -181,10 +257,17 @@ static int read_file(const char* filename, const World_t world) {
     data = (cJSON*) Data_load("grid_color", root, cJSON_IsArray);
 
     if (cJSON_GetArraySize(data) >= 4) {
-        world->g_color = (SDL_Color) {cJSON_GetArrayItem(data, 0)->valueint, cJSON_GetArrayItem(data, 1)->valueint, cJSON_GetArrayItem(data, 2)->valueint, cJSON_GetArrayItem(data, 3)->valueint};
+
+        world->g_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
+        world->g_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
+        world->g_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
+        world->g_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
     }
     else {
-        world->g_color = (SDL_Color) {0, 0, 0, 255};
+        world->g_color[0] = 255;
+        world->g_color[1] = 255;
+        world->g_color[3] = 255;
+        world->g_color[2] = 255;
     }
 
     /* ==================== Retrieving world type ===================== */
@@ -304,12 +387,14 @@ void World_log(const World_t w) {
     printf("%-16s: %s\n", "grid", (w->is_grid) ? "yes" : "no");
     printf("%-16s: %ld\n", "rows", w->rows);
     printf("%-16s: %ld\n", "columns", w->columns);
+    printf("%-16s: %ld\n", "number of cells", w->columns * w->rows);
     printf("%-16s: %.0f (%.2f)\n", "rate", 1.0f / w->clock->time, w->clock->time);
+    printf("%-16s: %ld\n", "generation", w->generation);
 
     printf("%-16s: %s (%d)\n", "type", (w->type == 1) ? "wrap around" : (w->type == 2) ? "dead" : "alive", w->type);
 
-    printf("%-16s: [%d, %d, %d, %d]\n", "cell color", w->c_color.r, w->c_color.g, w->c_color.b, w->c_color.a);
-    printf("%-16s: [%d, %d, %d, %d]\n", "grid color", w->g_color.g, w->g_color.g, w->g_color.b, w->g_color.a);
+    printf("%-16s: [%d, %d, %d, %d]\n", "cell color", w->c_color[0], w->c_color[1], w->c_color[2], w->c_color[3]);
+    printf("%-16s: [%d, %d, %d, %d]\n", "grid color", w->g_color[0], w->g_color[1], w->g_color[2], w->g_color[3]);
 
     return ;
 }
@@ -483,7 +568,107 @@ void World_evolve(const World_t w) {
         }
     }
 
+    w->generation++;
+
     return ;
+}
+
+/* ================================================================ */
+
+int World_save(const char* filename, const World_t w) {
+
+    FILE* file = NULL;
+    cJSON* root = NULL;
+    cJSON* data = NULL;
+    cJSON* array = NULL;
+
+    size_t i = 0;
+
+    if (w == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    if ((root = cJSON_CreateObject()) == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    if ((file = create_file(filename)) == NULL) {
+        
+        cJSON_Delete(root);
+
+        return EXIT_FAILURE;
+    }
+
+    /* ================================ */
+
+    data = (data = cJSON_CreateNumber(w->cell_size)) ? data : NULL;
+    cJSON_AddItemToObject(root, "cell_size", data);
+
+    data = (data = cJSON_CreateNumber(w->width)) ? data : NULL;
+    cJSON_AddItemToObject(root, "width", data);
+
+    data = (data = cJSON_CreateNumber(w->height)) ? data : NULL;
+    cJSON_AddItemToObject(root, "height", data);
+
+    data = (data = cJSON_CreateNumber(w->is_grid)) ? data : NULL;
+    cJSON_AddItemToObject(root, "is_grid", data);
+
+    data = (data = cJSON_CreateNumber(w->type)) ? data : NULL;
+    cJSON_AddItemToObject(root, "type", data);
+
+    data = (data = cJSON_CreateNumber(w->rate)) ? data : NULL;
+    cJSON_AddItemToObject(root, "rate", data);
+
+
+
+    if ((array = cJSON_CreateArray()) == NULL) {
+
+        fprintf(file, "%s", cJSON_Print(root));
+
+        cJSON_Delete(root);
+        fclose(file);
+
+        return EXIT_FAILURE;
+    }
+
+    for (i = 0; i < sizeof(w->c_color) / (sizeof(w->c_color[0])); i++) {
+
+        data = (data = cJSON_CreateNumber(w->c_color[i])) ? data : NULL;
+        cJSON_AddItemToArray(array, data);
+    }
+
+    cJSON_AddItemToObject(root, "cell_color", array);
+
+
+
+    if ((array = cJSON_CreateArray()) == NULL) {
+
+        fprintf(file, "%s", cJSON_Print(root));
+
+        cJSON_Delete(root);
+        fclose(file);
+
+        return EXIT_FAILURE;
+    }
+
+    for (i = 0; i < sizeof(w->g_color) / (sizeof(w->g_color[0])); i++) {
+
+        data = (data = cJSON_CreateNumber(w->g_color[i])) ? data : NULL;
+        cJSON_AddItemToArray(array, data);
+    }
+
+    cJSON_AddItemToObject(root, "grid_color", array);
+
+    save_array(root, w);
+
+    /* ================================ */
+
+    fprintf(file, "%s", cJSON_Print(root));
+
+    cJSON_Delete(root);
+    fclose(file);
+
+    return EXIT_SUCCESS;
 }
 
 /* ================================================================ */

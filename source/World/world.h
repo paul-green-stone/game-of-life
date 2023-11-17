@@ -17,8 +17,8 @@ struct world {
 
     int is_grid;        /* Decide whether the world grid is displayed or not */
 
-    SDL_Color c_color;  /* Color of a live cell */
-    SDL_Color g_color;  /* Grid color */
+    unsigned char c_color[4];  /* Color of a live cell */
+    unsigned char g_color[4];  /* Grid color */
 
     size_t generation;  /* Current generation */
 
@@ -54,7 +54,7 @@ extern int World_load(const char* filename, const World_t w);
 
 /* ================================ */
 
-extern int World_save(const char* filename);
+extern int World_save(const char* filename, const World_t w);
 
 /* ================================ */
 
