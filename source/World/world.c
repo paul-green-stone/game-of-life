@@ -45,6 +45,8 @@ static int save_array(const cJSON* root, const World_t w) {
     return EXIT_SUCCESS;
 }
 
+/* ================================================================ */
+
 /**
  * Creates a directory that stores saved worlds if it doesn't exist yet.
  * Create a file to store the current world data.
@@ -174,6 +176,50 @@ static int swap_2D_array(const World_t w) {
 
 /* ================================================================ */
 
+static int load_2D_array(const cJSON* root, const World_t w) {
+
+    size_t row = 0;
+    size_t column = 0;
+
+    cJSON* array = NULL;
+
+    cJSON* element = NULL;
+
+    cJSON* r = NULL;
+
+    /* Retreiving an array from a .json file */
+    if ((array = (cJSON*) Data_load("current", root, cJSON_IsArray)) == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    if (cJSON_GetArraySize(array) == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if (w->current == NULL) {
+
+        if ((w->current = allocate_2D_array(w->rows, w->columns)) == NULL) {
+            return EXIT_FAILURE;
+        }
+    }
+
+    for (row = 0; row < w->rows; row++) {
+
+        r = cJSON_GetArrayItem(array, row);
+
+        for (column = 0; column < w->columns; column++) {
+
+            element = cJSON_GetArrayItem(r, column);
+
+            w->current[row][column] = element->valueint;
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+/* ================================================================ */
+
 static int read_file(const char* filename, const World_t world) {
 
     /* Buffer containing file content */
@@ -278,6 +324,8 @@ static int read_file(const char* filename, const World_t world) {
     data = (cJSON*) Data_load("rate", root, cJSON_IsNumber);
     world->rate = (data) ? data->valueint : 5;
 
+    load_2D_array(root, world);
+
     /* ================================ */
 
     free(input);
@@ -367,8 +415,10 @@ World_t World_new(void) {
 int World_load(const char* filename, const World_t w) {
 
     if (filename == NULL) {
-
+        return EXIT_FAILURE;
     }
+
+    read_file(filename, w);
 
     return EXIT_SUCCESS;
 }

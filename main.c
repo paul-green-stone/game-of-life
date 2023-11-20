@@ -24,11 +24,13 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
+    World_load("saves/save.json", world);
+
     SDL_SetRenderDrawBlendMode(window->renderer, SDL_BLENDMODE_BLEND);
 
-    if (world->start > 0) {
-        World_randomize(world, world->start);
-    }
+    // if (world->start > 0) {
+    //     World_randomize(world, world->start);
+    // }
 
     World_log(world);
 
