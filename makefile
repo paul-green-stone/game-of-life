@@ -1,9 +1,9 @@
 CC			:= gcc
 LD			:= ld
 CFLAGS 		:= -g -c
-ALL_CFLAGS 	:= -Wall -Wextra -pedantic-errors -O2
+ALL_CFLAGS 	:= -Wall -Wextra -pedantic-errors -O2 `pkg-config --cflags --libs sdl2` `pkg-config --cflags --libs SDL2_image` `pkg-config --cflags --libs SDL2_ttf`
 
-LDFLAGS		:= -L/usr/local/lib/user -llilen -lSDL2 -lSDL2_image
+LDFLAGS		:= `pkg-config --cflags --libs sdl2` `pkg-config --cflags --libs SDL2_image` `pkg-config --cflags --libs SDL2_ttf` liblilen.a
 
 PROG		:= a
 

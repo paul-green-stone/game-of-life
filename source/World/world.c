@@ -35,23 +35,6 @@ static const struct world WORLD  = {
 #undef WIDTH
 #undef HEIGH
 
-/**
- * Extract a piece of information `name` from a parsed JSON objects `root`.
- * Use `check` function to check if the extracted data belongs to the specified type.
-*/
-static const cJSON* Data_load(const char* name, const cJSON* root, cJSON_bool (check)(const cJSON* const)) {
-
-    cJSON* data = NULL;
-
-    return
-        (root == NULL) ? 
-            NULL : (name == NULL) ? 
-                root : (check((data = cJSON_GetObjectItemCaseSensitive(root, name)))) ? 
-                    data : NULL;
-}
-
-
-
 /* ================================================================ */
 /* ===================== ARRAY MANIPULATIONS ====================== */
 /* ================================================================ */
@@ -265,7 +248,7 @@ static int load_2D_array(const cJSON* root, unsigned char** dst, int rows, int c
     cs = (size_t) columns;
 
     /* Retreiving an array from a .json file */
-    if ((array = (cJSON*) Data_load("current", root, cJSON_IsArray)) == NULL) {
+    if ((array = (cJSON*) Data_read("current", root, cJSON_IsArray)) == NULL) {
         return EXIT_FAILURE;
     }
 
@@ -334,8 +317,6 @@ static FILE* create_file(const char* filename) {
 */
 static int read_file(const char* filename, const World_t world) {
 
-    /* Buffer containing file content */
-    char* input = NULL;
     /* Parsed JSON object */
     cJSON* root = NULL;
 
@@ -346,25 +327,20 @@ static int read_file(const char* filename, const World_t world) {
         return EXIT_FAILURE;
     }
 
-    /* ============== Open a file with default settings =============== */
-    if ((input = LilEn_read_data_file(filename)) == NULL) {
-        goto CLEANUP;
-    }
-
     /* ======================= Parse the data ========================= */
-    if ((root = cJSON_Parse(input)) == NULL) {
+    if ((root = LilEn_read_json(filename)) == NULL) {
         goto CLEANUP;
     }
 
     /* ==================== Retrieving a cell size ==================== */
-    data = (cJSON*) Data_load("cell_size", root, cJSON_IsNumber);
+    data = (cJSON*) Data_read("cell_size", root, cJSON_IsNumber);
     world->cell_size = (data) ? data->valueint : 4;
 
     /* ================= Retrieving width and height ================== */
-    data = (cJSON*) Data_load("width", root, cJSON_IsNumber);
+    data = (cJSON*) Data_read("width", root, cJSON_IsNumber);
     world->width = (data) ? data->valueint : 400;
 
-    data = (cJSON*) Data_load("height", root, cJSON_IsNumber);
+    data = (cJSON*) Data_read("height", root, cJSON_IsNumber);
     world->height = (data) ? data->valueint : 400;
 
     /* ================= Adjusting sizes of the world ================= */
@@ -384,17 +360,17 @@ static int read_file(const char* filename, const World_t world) {
     }
 
     /* ==================== Retrieving start info ===================== */
-    data = (cJSON*) Data_load("start", root, cJSON_IsNumber);
+    data = (cJSON*) Data_read("start", root, cJSON_IsNumber);
 
     /* Out of the whole number of cells, make approximately 10% of them to be alive */
     world->start = (data) ? data->valueint : (int) (world->rows * world->columns * 0.1);
 
     /* ===================== Retrieving grid info ===================== */
-    data = (cJSON*) Data_load("grid", root, cJSON_IsNumber);
+    data = (cJSON*) Data_read("grid", root, cJSON_IsNumber);
     world->is_grid = (data) ? data->valueint : 1;
 
     /* ====================== Retrieving colors ======================= */
-    data = (cJSON*) Data_load("cell_color", root, cJSON_IsArray);
+    data = (cJSON*) Data_read("cell_color", root, cJSON_IsArray);
 
     if (cJSON_GetArraySize(data) >= 4) {
 
@@ -413,7 +389,7 @@ static int read_file(const char* filename, const World_t world) {
 
     /* ================================ */
 
-    data = (cJSON*) Data_load("grid_color", root, cJSON_IsArray);
+    data = (cJSON*) Data_read("grid_color", root, cJSON_IsArray);
 
     if (cJSON_GetArraySize(data) >= 4) {
 
@@ -430,18 +406,17 @@ static int read_file(const char* filename, const World_t world) {
     }
 
     /* ==================== Retrieving world type ===================== */
-    data = (cJSON*) Data_load("type", root, cJSON_IsNumber);
+    data = (cJSON*) Data_read("type", root, cJSON_IsNumber);
     world->type = (data) ? data->valueint : 1;
 
     /* ==================== Retrieving world rate ===================== */
-    data = (cJSON*) Data_load("rate", root, cJSON_IsNumber);
+    data = (cJSON*) Data_read("rate", root, cJSON_IsNumber);
     world->rate = (data) ? data->valueint : 5;
 
     load_2D_array(root, world->current, world->rows, world->columns);
 
     /* ================================ */
 
-    free(input);
     cJSON_Delete(root);
 
     return EXIT_SUCCESS;
@@ -451,10 +426,6 @@ static int read_file(const char* filename, const World_t world) {
     { CLEANUP:
 
         LilEn_print_error();
-
-        if (input != NULL) {
-            free(input);
-        }
 
         if (root != NULL) {
             cJSON_Delete(root);
