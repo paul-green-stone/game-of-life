@@ -8,11 +8,22 @@ LDFLAGS		:= `pkg-config --cflags --libs sdl2` `pkg-config --cflags --libs SDL2_i
 PROG		:= a
 
 OBJDIR		:= objects
-OBJS		:= $(addprefix $(OBJDIR)/, main.o world.o)
+OBJS		:= $(addprefix $(OBJDIR)/, main.o world.o array.o)
 
 INCLUDE		:= source/include.h
 MAIN		:= main.c
+
+# ================================================================ #
+# World module
 WORLD		:= $(addprefix source/World/, world.c world.h)
+
+# ================================================================ #
+# array module
+ARRAY		:= $(addprefix source/, array.c array.h)
+
+# ================================================================ #
+# file module
+FILE		:= $(addprefix source/, file.c file.h)
 
 # ================================================================ #
 
@@ -22,7 +33,19 @@ $(PROG): $(OBJS)
 $(OBJDIR)/main.o: $(MAIN) $(INCLUDE)
 	$(CC) -o $@ $(CFLAGS) $(ALL_CFLAGS) $<
 
+# ================================================================ #
+# World module
 $(OBJDIR)/world.o: $(WORLD) $(INCLUDE)
+	$(CC) -o $@ $(CFLAGS) $(ALL_CFLAGS) $<
+
+# ================================================================ #
+# array module
+$(OBJDIR)/array.o: $(ARRAY) $(INCLUDE)
+	$(CC) -o $@ $(CFLAGS) $(ALL_CFLAGS) $<
+
+# ================================================================ #
+# file module
+$(OBJDIR)/file.o: $(FILE) $(INCLUDE)
 	$(CC) -o $@ $(CFLAGS) $(ALL_CFLAGS) $<
 
 $(shell mkdir -p $(OBJDIR))

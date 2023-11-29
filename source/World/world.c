@@ -3,12 +3,8 @@
 #define LOAD 0
 #define SAVE 1
 
-/* Little buffer size */
-#define LBUFF 128
 /* Maximum filename size */
 #define MAX_FILENAME 32
-
-#define length(str) (strlen(str) + 1)
 
 /* ================================================================ */
 /* ============================ STATIC ============================ */
@@ -34,280 +30,6 @@ static const struct world WORLD  = {
 #undef CELL
 #undef WIDTH
 #undef HEIGH
-
-/* ================================================================ */
-/* ===================== ARRAY MANIPULATIONS ====================== */
-/* ================================================================ */
-
-/**
- * Deallocate a dynamically allocated 2-dimensional array.
-*/
-static void deallocate_2D_array(unsigned char*** array, int rows) {
-
-    /* Array variable */
-    size_t i = 0;
-
-    /* size_t version or `rows` */
-    size_t r = 0;
-
-    /* Prevent overflow. INT_MAX is the maximum possible value here */
-    if (rows < 0) {
-        return ;
-    }
-
-    /* One-time cast to size_t in order to not waste time on casting every iteration. Yes, I'm aware of compiler optimiation -_-*/
-    r = (size_t) rows;
-
-    for (i = 0; i < r; i++) {
-        free((*array)[i]);
-    }
-
-    free(*array);
-
-    *array = NULL;
-
-    return ;
-}
-
-/* ================================================================ */
-
-/**
- * Dynamically allocate a 2-dimnsional array of size rows * columns.
-*/
-static unsigned char** allocate_2D_array(int rows, int columns) {
-
-    unsigned char** array = NULL;
-
-    /* Array variable */
-    size_t i = 0;
-
-    /* size_t version or `rows` */
-    size_t r = 0;
-
-    /* Prevent overflow */
-    if ((rows < 0) || (columns < 0)) {
-        return array;
-    }
-
-    /* One-time cast */
-    r = (size_t) rows;
-
-    /* ======================= Array allocation ======================= */
-
-    /* Allocate `rows` rows for an array. Clear it */
-    if ((array = (unsigned char**) calloc(rows, sizeof(unsigned char*))) == NULL) {
-
-        LilEn_print_error();
-        deallocate_2D_array(&array, rows);
-
-        return NULL;
-    }
-
-    /* For each row allocate `columns` columns and clear them, set their initial values to 0 */
-    for (i = 0; i < r; i++) {
-
-        if ((array[i] = (unsigned char*) calloc(columns, sizeof(unsigned char))) == NULL) {
-
-            LilEn_print_error();
-            deallocate_2D_array(&array, rows);
-
-            return NULL;
-        }
-    }
-
-    return array;
-}
-
-/* ================================================================ */
-
-/**
- * Save a current generation (a 2D array) of a world into a JSON structure.
-*/
-static int save_2D_array(const cJSON* root, unsigned char** array, int rows, int columns) {
-
-    /* Array object to add into a root tree */
-    cJSON* a = NULL;
-    /* JSON object equivalent to a single array row */
-    cJSON* r = NULL;
-    /* JSON object equivalent to a value of a row cell */
-    cJSON* data = NULL;
-
-    size_t row;
-    size_t rs;      /* Total number of rows */
-
-    size_t column;
-    size_t cs;      /* Total number of columns */
-
-    /* Prevent overflow */
-    if ((rows < 0) || (columns < 0)) {
-        return EXIT_FAILURE;
-    }
-
-    /* One-time cast */
-    rs = (size_t) rows;
-    cs = (size_t) columns;
-
-    if ((a = cJSON_CreateArray()) == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    for (row = 0; row < rs; row++) {
-
-        if ((r = cJSON_CreateArray()) == NULL) {
-            return EXIT_FAILURE;
-        }
-
-        for (column = 0; column < cs; column++) {
-
-            data = (data = cJSON_CreateNumber(array[row][column])) ? data : NULL;
-            cJSON_AddItemToArray(r, data);
-        }
-
-        cJSON_AddItemToArray(a, r);
-    }
-
-    cJSON_AddItemToObject((cJSON*) root, "current", a);
-
-    return EXIT_SUCCESS;
-}
-
-/* ================================================================ */
-
-/**
- * Copy values from `array_1` into `array_2` and values from `array_2` into `array_1`. In other words, swap arrays.
-*/
-static int swap_2D_array(unsigned char** array_1, unsigned char** array_2, int rows, int columns) {
-
-    size_t row = 0;
-    size_t r = 0;
-
-    size_t column = 0;
-    size_t c = 0;
-
-    /* Temporary value container */
-    unsigned char temp = 0;
-
-    /* None of the arrays can be NULL */
-    if ((array_1 == NULL) || (array_2 == NULL)) {
-        return EXIT_FAILURE;
-    }
-
-    /* Prevent overflow */
-    if ((rows < 0) || (columns < 0)) {
-        return EXIT_FAILURE;
-    }
-
-    /* One-time cast */
-    r = (size_t) rows;
-    c = (size_t) columns;
-
-    for (row = 0; row < r; row++) {
-
-        for (column = 0; column < c; column++) {
-
-            temp = array_1[row][column];
-            array_1[row][column] = array_2[row][column];
-            array_2[row][column] = temp;
-        }
-    }
-
-    return EXIT_SUCCESS;
-}
-
-/* ================================================================ */
-
-/**
- * Load an array from a file. The parsed JSON object must contain a field name `current`.
-*/
-static int load_2D_array(const cJSON* root, unsigned char** dst, int rows, int columns) {
-
-    size_t row = 0;
-    size_t rs = 0;
-
-    size_t column = 0;
-    size_t cs = 0;
-
-    /* Array extracted from the root */
-    cJSON* array = NULL;
-
-    cJSON* element = NULL;
-
-    cJSON* r = NULL;
-
-    if (dst == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    /* Prevent overflow */
-    if ((rows < 0) || (columns < 0)) {
-        return EXIT_FAILURE;
-    }
-
-    /* One-time cast */
-    rs = (size_t) rows;
-    cs = (size_t) columns;
-
-    /* Retreiving an array from a .json file */
-    if ((array = (cJSON*) Data_read("current", root, cJSON_IsArray)) == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    /* Get the number of rows in the extracted array */
-    if (cJSON_GetArraySize(array) == 0) {
-        return EXIT_SUCCESS;
-    }
-
-    /* For every row ... */
-    for (row = 0; row < rs; row++) {
-
-        /* get the size of it */
-        r = cJSON_GetArrayItem(array, row);
-
-        /* and going through the row .. */
-        for (column = 0; column < cs; column++) {
-
-            /* take the value of each cell in it ... */
-            element = cJSON_GetArrayItem(r, column);
-
-            /* and place it into the destination array */
-            dst[row][column] = element->valueint;
-        }
-    }
-
-    return EXIT_SUCCESS;
-}
-
-
-
-/* ================================================================ */
-/* ======================= FILE OPERATIONS ======================== */
-/* ================================================================ */
-
-/**
- * Creates a directory that stores saved worlds if it doesn't exist yet.
- * Create a file to store the current world data.
-*/
-static FILE* create_file(const char* filename) {
-
-    FILE* file = NULL;
-
-    char buffer[LBUFF];
-
-    strncpy(buffer, "saves/", length("saves/"));
-
-    if ((opendir(buffer) == NULL) && (mkdir(buffer, 0777) != 0)) {
-        return NULL;
-    }
-
-    strncat(buffer, filename, MAX_FILENAME);
-    strncat(buffer, ".json", length(".json"));
-
-    if ((file = fopen(buffer, "w")) == NULL) {
-        return NULL;
-    }
-
-    return file;
-}
 
 /* ================================================================ */
 
@@ -444,6 +166,26 @@ static int read_file(const char* filename, const World_t world) {
 World_t World_new(void) {
 
     World_t world = NULL;
+    cJSON* root = NULL;
+
+    if (file_exists("world.json") == 0) {
+        
+        /* Read from the file */
+        if ((root = LilEn_read_json("world.json")) == NULL) {
+
+            /* Something went wrong. Using a fallback */
+            LilEn_print_error();
+        }
+
+
+    }
+    else {
+
+        /* Allocating a new instance of a world */
+        if ((world = (World_t) calloc(1, sizeof(struct world))) == NULL) {
+            goto CLEANUP;
+        }
+    }
 
     /* ================================================================ */
     /* ============= Allocating a new instance of a world ============= */
@@ -797,7 +539,7 @@ int World_save(const char* filename, const World_t w) {
 
     cJSON_AddItemToObject(root, "grid_color", array);
 
-    save_2D_array(root, w->current, w->rows, w->columns);
+    save_2D_array(root, "current", w->current, w->rows, w->columns);
 
     /* ================================ */
 
