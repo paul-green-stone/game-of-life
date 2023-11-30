@@ -10,9 +10,33 @@
 /* ============================ STATIC ============================ */
 /* ================================================================ */
 
+static World_t _World_alloc(void) {
+
+    World_t world = NULL;
+
+    if ((world = (World_t) calloc(1, sizeof(struct world))) == NULL) {
+        goto ERROR;
+    }
+
+    if ((world->clock = Timer_new()) == NULL) {
+        goto ERROR;
+    }
+
+    return world;
+
+    { ERROR:
+        free(world);
+
+        return NULL;
+    }
+}
+
+/* ================================ */
+
 #define CELL 4          /* Default cell size */
 #define WIDTH 400       /* Default width */
 #define HEIGHT 400      /* Defaul height */
+#define PERCENT .4      /* By default,40% of cells are being tried to initialized */
 
 /* Default world */
 static const struct world WORLD  = {
@@ -20,144 +44,19 @@ static const struct world WORLD  = {
     .width = WIDTH,
     .height = HEIGHT,
     .is_grid = 1,
-    .g_color = {255, 0, 0, 255},
-    .c_color = {0, 0, 0, 25},
+    .g_color = {0, 0, 0, 25},
+    .c_color = {255, 0, 0, 255},
+    .bg_color = {255, 255, 255, 255},
+    .text_color = {0, 0, 0, 127},
     .type = 1,
     .rate = 10,
-    .start = (int) ((WIDTH / CELL) * (HEIGHT / CELL) * .4),
+    .percent = PERCENT,
 };
 
 #undef CELL
 #undef WIDTH
 #undef HEIGH
-
-/* ================================================================ */
-
-/**
- * Read a .json file containing information about the world you are going to examine.
- * Initialize the world with with data just read.
-*/
-static int read_file(const char* filename, const World_t world) {
-
-    /* Parsed JSON object */
-    cJSON* root = NULL;
-
-    /* A single piece of information extracted from a root */
-    cJSON* data = NULL;
-
-    if (world == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    /* ======================= Parse the data ========================= */
-    if ((root = LilEn_read_json(filename)) == NULL) {
-        goto CLEANUP;
-    }
-
-    /* ==================== Retrieving a cell size ==================== */
-    data = (cJSON*) Data_read("cell_size", root, cJSON_IsNumber);
-    world->cell_size = (data) ? data->valueint : 4;
-
-    /* ================= Retrieving width and height ================== */
-    data = (cJSON*) Data_read("width", root, cJSON_IsNumber);
-    world->width = (data) ? data->valueint : 400;
-
-    data = (cJSON*) Data_read("height", root, cJSON_IsNumber);
-    world->height = (data) ? data->valueint : 400;
-
-    /* ================= Adjusting sizes of the world ================= */
-    world->rows = world->height / world->cell_size;
-    world->columns = world->width / world->cell_size;
-
-    int r = world->width % world->cell_size;
-
-    if (r) {
-        world->width -= r;
-    }
-
-    r = world->height % world->cell_size;
-
-    if (r) {
-        world->height -= r;
-    }
-
-    /* ==================== Retrieving start info ===================== */
-    data = (cJSON*) Data_read("start", root, cJSON_IsNumber);
-
-    /* Out of the whole number of cells, make approximately 10% of them to be alive */
-    world->start = (data) ? data->valueint : (int) (world->rows * world->columns * 0.1);
-
-    /* ===================== Retrieving grid info ===================== */
-    data = (cJSON*) Data_read("grid", root, cJSON_IsNumber);
-    world->is_grid = (data) ? data->valueint : 1;
-
-    /* ====================== Retrieving colors ======================= */
-    data = (cJSON*) Data_read("cell_color", root, cJSON_IsArray);
-
-    if (cJSON_GetArraySize(data) >= 4) {
-
-        world->c_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
-        world->c_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
-        world->c_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
-        world->c_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
-    }
-    else {
-
-        world->c_color[0] = 255;
-        world->c_color[1] = 0;
-        world->c_color[3] = 0;
-        world->c_color[2] = 255;
-    }
-
-    /* ================================ */
-
-    data = (cJSON*) Data_read("grid_color", root, cJSON_IsArray);
-
-    if (cJSON_GetArraySize(data) >= 4) {
-
-        world->g_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
-        world->g_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
-        world->g_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
-        world->g_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
-    }
-    else {
-        world->g_color[0] = 255;
-        world->g_color[1] = 255;
-        world->g_color[3] = 255;
-        world->g_color[2] = 255;
-    }
-
-    /* ==================== Retrieving world type ===================== */
-    data = (cJSON*) Data_read("type", root, cJSON_IsNumber);
-    world->type = (data) ? data->valueint : 1;
-
-    /* ==================== Retrieving world rate ===================== */
-    data = (cJSON*) Data_read("rate", root, cJSON_IsNumber);
-    world->rate = (data) ? data->valueint : 5;
-
-    load_2D_array(root, world->current, world->rows, world->columns);
-
-    /* ================================ */
-
-    cJSON_Delete(root);
-
-    return EXIT_SUCCESS;
-
-    /* ================================ */
-
-    { CLEANUP:
-
-        LilEn_print_error();
-
-        if (root != NULL) {
-            cJSON_Delete(root);
-        }
-
-        return EXIT_FAILURE;
-    }
-}
-
-
+#undef PERCENT
 
 /* ================================================================ */
 /* ============================ EXTERN ============================ */
@@ -166,40 +65,27 @@ static int read_file(const char* filename, const World_t world) {
 World_t World_new(void) {
 
     World_t world = NULL;
-    cJSON* root = NULL;
+    FILE* file = NULL;
 
-    if (file_exists("world.json") == 0) {
-        
-        /* Read from the file */
-        if ((root = LilEn_read_json("world.json")) == NULL) {
+    if ((world = _World_alloc()) == NULL) {
+        return NULL;
+    }
 
-            /* Something went wrong. Using a fallback */
+    /* File does not exist */
+    if (file_exists("world.json") != 0) {
+
+        /* Create a file */
+        if ((file = file_create("world.json")) == NULL) {
             LilEn_print_error();
         }
 
+        fclose(file);
 
-    }
-    else {
-
-        /* Allocating a new instance of a world */
-        if ((world = (World_t) calloc(1, sizeof(struct world))) == NULL) {
-            goto CLEANUP;
-        }
+        /* Save a default world into a file */
+        World_save("world.json", (World_t) &WORLD);
     }
 
-    /* ================================================================ */
-    /* ============= Allocating a new instance of a world ============= */
-    /* ================================================================ */
-
-    if ((world = (World_t) calloc(1, sizeof(struct world))) == NULL) {
-        goto CLEANUP;
-    }
-
-    /* ================================ */
-
-    if (read_file("source/World/default.json", world) == EXIT_FAILURE) {
-        goto CLEANUP;
-    }
+    World_load("world.json", world);
 
     /* ================================ */
 
@@ -211,12 +97,11 @@ World_t World_new(void) {
         goto CLEANUP;
     }
 
-    /* ====================== Creating a clock  ======================= */
-    if ((world->clock = Timer_new()) == NULL) {
-        goto CLEANUP;
-    }
-
     Timer_set(world->clock, 1.0f / world->rate);
+
+    if (world->percent > 0) {
+        World_randomize(world, ((int) (world->width / world->cell_size) * (world->height / world->cell_size) * world->percent));
+    }
 
     /* ================================================================ */
 
@@ -242,15 +127,170 @@ World_t World_new(void) {
 
 int World_load(const char* filename, const World_t w) {
 
+    /* Parsed JSON object */
+    cJSON* root = NULL;
+
+    /* A single piece of information extracted from a root */
+    cJSON* data = NULL;
+
     if (filename == NULL) {
         return EXIT_FAILURE;
     }
 
-    read_file(filename, w);
+    if (w == NULL) {
+        return EXIT_FAILURE;
+    }
 
-    w->start = 0;
+    /* ======================= Parse the data ========================= */
+    if ((root = LilEn_read_json(filename)) == NULL) {
+        goto CLEANUP;
+    }
+
+    /* ==================== Retrieving a cell size ==================== */
+    data = (cJSON*) Data_read("cell_size", root, cJSON_IsNumber);
+    w->cell_size = (data) ? (size_t) data->valueint : WORLD.cell_size;
+
+    /* ================= Retrieving width and height ================== */
+    data = (cJSON*) Data_read("width", root, cJSON_IsNumber);
+    w->width = (data) ? data->valueint : WORLD.width;
+
+    data = (cJSON*) Data_read("height", root, cJSON_IsNumber);
+    w->height = (data) ? data->valueint : WORLD.height;
+
+    /* ================= Adjusting sizes of the world ================= */
+    w->rows = w->height / w->cell_size;
+    w->columns = w->width / w->cell_size;
+
+    int r = w->width % w->cell_size;
+
+    if (r) {
+        w->width -= r;
+    }
+
+    r = w->height % w->cell_size;
+
+    if (r) {
+        w->height -= r;
+    }
+
+    /* ==================== Retrieving start info ===================== */
+    data = (cJSON*) Data_read("percent", root, cJSON_IsNumber);
+    w->percent = (data) ? data->valuedouble : WORLD.percent;
+
+    /* ===================== Retrieving grid info ===================== */
+    data = (cJSON*) Data_read("grid", root, cJSON_IsNumber);
+    w->is_grid = (data) ? data->valueint : WORLD.is_grid;
+
+    /* ===================== Retrieving grid rate ===================== */
+    data = (cJSON*) Data_read("rate", root, cJSON_IsNumber);
+    w->rate = (data) ? data->valueint : WORLD.rate;
+
+    /* ==================== Retrieving world type ===================== */
+    data = (cJSON*) Data_read("type", root, cJSON_IsNumber);
+    w->type = (data) ? data->valueint : WORLD.type;
+
+    /* ================================ */
+    /* ====== READING GRID COLOR ====== */
+    /* ================================ */
+
+    data = (cJSON*) Data_read("cell_color", root, cJSON_IsArray);
+
+    if (cJSON_GetArraySize(data) >= 4) {
+
+        w->c_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
+        w->c_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
+        w->c_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
+        w->c_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
+    }
+    else {
+
+        w->c_color[0] = WORLD.c_color[0];
+        w->c_color[1] = WORLD.c_color[1];
+        w->c_color[3] = WORLD.c_color[2];
+        w->c_color[2] = WORLD.c_color[3];
+    }
+
+    /* ================================ */
+    /* ====== READING GRID COLOR ====== */
+    /* ================================ */
+
+    data = (cJSON*) Data_read("grid_color", root, cJSON_IsArray);
+
+    if (cJSON_GetArraySize(data) >= 4) {
+
+        w->g_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
+        w->g_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
+        w->g_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
+        w->g_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
+    }
+    else {
+        w->g_color[0] = WORLD.g_color[0];
+        w->g_color[1] = WORLD.g_color[1];
+        w->g_color[3] = WORLD.g_color[2];
+        w->g_color[2] = WORLD.g_color[3];
+    }
+
+    /* ================================ */
+    /* === READING BACKGROUND COLOR === */
+    /* ================================ */
+
+    data = (cJSON*) Data_read("bg_color", root, cJSON_IsArray);
+
+    if (cJSON_GetArraySize(data) >= 4) {
+
+        w->bg_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
+        w->bg_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
+        w->bg_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
+        w->bg_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
+    }
+    else {
+        w->bg_color[0] = WORLD.bg_color[0];
+        w->bg_color[1] = WORLD.bg_color[1];
+        w->bg_color[3] = WORLD.bg_color[2];
+        w->bg_color[2] = WORLD.bg_color[3];
+    }
+
+    /* ================================ */
+    /* ====== READING TEXT COLOR ====== */
+    /* ================================ */
+
+    data = (cJSON*) Data_read("text_color", root, cJSON_IsArray);
+
+    if (cJSON_GetArraySize(data) >= 4) {
+
+        w->text_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
+        w->text_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
+        w->text_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
+        w->text_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
+    }
+    else {
+        w->text_color[0] = WORLD.text_color[0];
+        w->text_color[1] = WORLD.text_color[1];
+        w->text_color[3] = WORLD.text_color[2];
+        w->text_color[2] = WORLD.text_color[3];
+    }
+
+    /* Loading the current generation */
+    load_2D_array(root, "current", w->current, w->rows, w->columns);
+
+    /* ================================ */
+
+    cJSON_Delete(root);
 
     return EXIT_SUCCESS;
+
+    /* ================================ */
+
+    { CLEANUP:
+
+        LilEn_print_error();
+
+        if (root != NULL) {
+            cJSON_Delete(root);
+        }
+
+        return EXIT_FAILURE;
+    }
 }
 
 /* ================================================================ */
@@ -275,6 +315,8 @@ void World_log(const World_t w) {
 
     printf("%-16s: [%d, %d, %d, %d]\n", "cell color", w->c_color[0], w->c_color[1], w->c_color[2], w->c_color[3]);
     printf("%-16s: [%d, %d, %d, %d]\n", "grid color", w->g_color[0], w->g_color[1], w->g_color[2], w->g_color[3]);
+    printf("%-16s: [%d, %d, %d, %d]\n", "text color", w->text_color[0], w->text_color[1], w->text_color[2], w->text_color[3]);
+    printf("%-16s: [%d, %d, %d, %d]\n", "BG color", w->bg_color[0], w->bg_color[1], w->bg_color[2], w->bg_color[3]);
 
     return ;
 }
@@ -291,9 +333,9 @@ int World_destroy(World_t* w) {
 
     deallocate_2D_array(&(*w)->previous, (*w)->rows);
 
-    free(*w);
-
     Timer_destroy(&(*w)->clock);
+
+    free(*w);
 
     *w = NULL;
 
@@ -472,7 +514,7 @@ int World_save(const char* filename, const World_t w) {
         return EXIT_FAILURE;
     }
 
-    if ((file = create_file(filename)) == NULL) {
+    if ((file = file_create(filename)) == NULL) {
         
         cJSON_Delete(root);
 
@@ -499,7 +541,8 @@ int World_save(const char* filename, const World_t w) {
     data = (data = cJSON_CreateNumber(w->rate)) ? data : NULL;
     cJSON_AddItemToObject(root, "rate", data);
 
-
+    data = (data = cJSON_CreateNumber(w->percent)) ? data : NULL;
+    cJSON_AddItemToObject(root, "percent", data);
 
     if ((array = cJSON_CreateArray()) == NULL) {
 
@@ -519,8 +562,6 @@ int World_save(const char* filename, const World_t w) {
 
     cJSON_AddItemToObject(root, "cell_color", array);
 
-
-
     if ((array = cJSON_CreateArray()) == NULL) {
 
         fprintf(file, "%s", cJSON_Print(root));
@@ -538,6 +579,46 @@ int World_save(const char* filename, const World_t w) {
     }
 
     cJSON_AddItemToObject(root, "grid_color", array);
+
+    if ((array = cJSON_CreateArray()) == NULL) {
+
+        fprintf(file, "%s", cJSON_Print(root));
+
+        cJSON_Delete(root);
+        fclose(file);
+
+        return EXIT_FAILURE;
+    }
+
+    for (i = 0; i < sizeof(w->bg_color) / (sizeof(w->bg_color[0])); i++) {
+
+        data = (data = cJSON_CreateNumber(w->bg_color[i])) ? data : NULL;
+        cJSON_AddItemToArray(array, data);
+    }
+
+    cJSON_AddItemToObject(root, "bg_color", array);
+
+    /* ================================ */
+    /* ====== SAVING TEXT COLOR ======= */
+    /* ================================ */
+
+    if ((array = cJSON_CreateArray()) == NULL) {
+
+        fprintf(file, "%s", cJSON_Print(root));
+
+        cJSON_Delete(root);
+        fclose(file);
+
+        return EXIT_FAILURE;
+    }
+
+    for (i = 0; i < sizeof(w->text_color) / (sizeof(w->text_color[0])); i++) {
+
+        data = (data = cJSON_CreateNumber(w->text_color[i])) ? data : NULL;
+        cJSON_AddItemToArray(array, data);
+    }
+
+    cJSON_AddItemToObject(root, "text_color", array);
 
     save_2D_array(root, "current", w->current, w->rows, w->columns);
 

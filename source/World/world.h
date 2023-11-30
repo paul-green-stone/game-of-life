@@ -1,6 +1,8 @@
 #ifndef GOL_WORLD_H
 #define GOL_WORLD_H
 
+#include "../include.h"
+
 /* ================================================================ */
 
 struct world {
@@ -15,8 +17,10 @@ struct world {
 
     int is_grid;        /* Decide whether the world grid is displayed or not */
 
-    unsigned char c_color[4];  /* Color of a live cell */
-    unsigned char g_color[4];  /* Grid color */
+    unsigned char c_color[4];       /* Color of a live cell */
+    unsigned char g_color[4];       /* Grid color */
+    unsigned char bg_color[4];      /* Background color */
+    unsigned char text_color[4];    /* Text color */
 
     size_t generation;  /* Current generation */
 
@@ -29,7 +33,7 @@ struct world {
 
     float rate;
 
-    size_t start;       /* Number of live cells at the start */
+    float percent;      /* How many cells to initialize at the start (%) */
 };
 
 typedef struct world World;
@@ -39,6 +43,13 @@ typedef World* World_t;
 /* ================================================================ */
 /* ========================== INTERFACE =========================== */
 /* ================================================================ */
+
+/**
+ * Bring the world to life.
+*/
+extern void World_run(const World_t world);
+
+/* ================================ */
 
 /**
  * Dynamically allocate a new instance of a world of `World_t` type.

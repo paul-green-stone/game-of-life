@@ -25,7 +25,7 @@ extern FILE* file_create(const char* name);
 /**
  * Create a new directory.
 */
-extern DIR* dir_create(const char pathname, mode_t mode);
+extern int dir_create(const char* pathname, mode_t mode);
 
 /* ================================================================ */
 

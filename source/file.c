@@ -26,19 +26,17 @@ FILE* file_create(const char* name) {
 
 /* ================================================================ */
 
-DIR* dir_create(const char pathname, mode_t mode) {
-
-    DIR* dir = NULL;
+int dir_create(const char* pathname, mode_t mode) {
 
     strncpy(g_filename, pathname, LBUFF - 1);
     g_filename[length(g_filename)] = '\0';
 
-    if ((dir = mkdir(pathname, mode)) == NULL) {
+    if (mkdir(pathname, mode) != 0) {
         /* Upon NULL, call `LilEn_print_error` to get more inforamation */
-        return NULL;
+        return EXIT_FAILURE;
     }
 
-    return dir;
+    return EXIT_SUCCESS;
 }
 
 #undef LBUFF
