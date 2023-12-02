@@ -51,6 +51,8 @@ static const struct world WORLD  = {
     .type = 1,
     .rate = 10,
     .percent = PERCENT,
+    .generation = 0,
+    .edit = 0,
 };
 
 #undef CELL
@@ -188,6 +190,13 @@ int World_load(const char* filename, const World_t w) {
     /* ==================== Retrieving world type ===================== */
     data = (cJSON*) Data_read("type", root, cJSON_IsNumber);
     w->type = (data) ? data->valueint : WORLD.type;
+
+    /* ================= Retrieving world generation ================== */
+    data = (cJSON*) Data_read("generation", root, cJSON_IsNumber);
+    w->generation = (data) ? (size_t) data->valueint : WORLD.generation;
+
+    data = (cJSON*) Data_read("edit", root, cJSON_IsNumber);
+    w->edit = (data) ? data->valueint : WORLD.edit;
 
     /* ================================ */
     /* ====== READING GRID COLOR ====== */
@@ -541,8 +550,14 @@ int World_save(const char* filename, const World_t w) {
     data = (data = cJSON_CreateNumber(w->rate)) ? data : NULL;
     cJSON_AddItemToObject(root, "rate", data);
 
+    data = (data = cJSON_CreateNumber(w->generation)) ? data : NULL;
+    cJSON_AddItemToObject(root, "generation", data);
+
     data = (data = cJSON_CreateNumber(w->percent)) ? data : NULL;
     cJSON_AddItemToObject(root, "percent", data);
+
+    data = (data = cJSON_CreateNumber(w->edit)) ? data : NULL;
+    cJSON_AddItemToObject(root, "edit", data);
 
     if ((array = cJSON_CreateArray()) == NULL) {
 

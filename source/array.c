@@ -224,3 +224,38 @@ int load_2D_array(const cJSON* root, const char* name, unsigned char** dst, int 
 
     return EXIT_SUCCESS;
 }
+
+/* ================================================================ */
+
+void clear_2D_array(unsigned char** array, int rows, int columns, unsigned char v) {
+
+    size_t row = 0;
+    size_t rs = 0;
+
+    size_t column = 0;
+    size_t cs = 0;
+
+    if (array == NULL) {
+        return ;
+    }
+
+    /* Prevent overflow */
+    if ((rows < 0) || (columns < 0)) {
+        return ;
+    }
+
+    /* One-time cast */
+    rs = (size_t) rows;
+    cs = (size_t) columns;
+
+    for (row = 0; row < rs; row++) {
+
+        for (column = 0; column < cs; column++) {
+            array[row][column] = v;
+        }
+    }
+
+    return ;
+}
+
+/* ================================================================ */

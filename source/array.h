@@ -40,4 +40,11 @@ extern int load_2D_array(const cJSON* root, const char* name, unsigned char** ds
 
 /* ================================================================ */
 
+/**
+ * 
+*/
+extern void clear_2D_array(unsigned char** array, int rows, int columns, unsigned char v);
+
+/* ================================================================ */
+
 #endif /* GOL_ARRAY_H */

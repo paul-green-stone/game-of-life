@@ -39,6 +39,6 @@ int dir_create(const char* pathname, mode_t mode) {
     return EXIT_SUCCESS;
 }
 
-#undef LBUFF
-
 /* ================================================================ */
+
+#undef LBUFF

@@ -34,6 +34,8 @@ struct world {
     float rate;
 
     float percent;      /* How many cells to initialize at the start (%) */
+
+    int edit;           /* Enable editor */
 };
 
 typedef struct world World;
@@ -88,6 +90,10 @@ extern void World_randomize(const World_t w, int c);
 /* ================================ */
 
 extern void World_evolve(const World_t w);
+
+/* ================================ */
+
+extern void World_edit(const World_t world);
 
 /* ================================================================ */
 

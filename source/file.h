@@ -10,6 +10,8 @@
 */
 #define file_exists(pathname) (access(pathname, F_OK))
 
+/* ================================================================ */
+
 /**
  * Check if the specified directory exists.
 */
@@ -21,6 +23,8 @@
  * Create a new file with the name `name`.
 */
 extern FILE* file_create(const char* name);
+
+/* ================================================================ */
 
 /**
  * Create a new directory.

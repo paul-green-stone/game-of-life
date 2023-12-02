@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <getopt.h>
 #include "../../LilEn/LilEn.h"
 
 #include "array.h"

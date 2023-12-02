@@ -93,3 +93,53 @@ void World_run(const World_t world) {
 
     return ;
 }
+
+/* ================================================================ */
+
+void World_edit(const World_t world) {
+
+    SDL_Event e;
+    int running = 1;
+
+    while (running) {
+        Timer_tick(g_timer);
+
+        while (SDL_PollEvent(&e)) {
+
+            switch (e.type) {
+
+                case SDL_QUIT:
+
+                    running = !running;
+
+                    break ;
+            }
+        }
+
+        if (Timer_is_ready(g_timer)) {
+            
+            /* ======================= Background color ======================= */
+            LilEn_set_colorRGB(world->bg_color[0], world->bg_color[1], world->bg_color[2], world->bg_color[3]);
+            Window_clear(NULL);
+
+            /* ========================== Cell color ========================== */
+            LilEn_set_colorRGB(world->c_color[0], world->c_color[1], world->c_color[2], world->c_color[3]);
+            World_present(world, NULL);
+
+            /* ========================= Grid drawing ========================= */
+            if (world->is_grid) {
+
+                LilEn_set_colorRGB(world->g_color[0], world->g_color[1], world->g_color[2], world->g_color[3]);
+
+                Window_display_grid(NULL, world->cell_size);
+            }
+
+            /* ======================== Window update ========================= */
+            Window_update(NULL);
+
+            Timer_reset(g_timer);
+        }
+    }
+
+    return ;
+}
