@@ -15,6 +15,9 @@ void World_run(const World_t world) {
 
     TTF_Font* font = NULL;
 
+    Timer_t delay = Timer_new();
+    int start = 0;
+
     /* ================================ */
 
     font = Font_load("montserrat.regular.ttf", 16);
@@ -24,9 +27,12 @@ void World_run(const World_t world) {
 
     /* ================================ */
 
+    Timer_set(delay, 1.5);
+
     while (running) {
         Timer_tick(g_timer);
         Timer_tick(world->clock);
+        Timer_tick(delay);
 
         while (SDL_PollEvent(&e)) {
 
@@ -81,11 +87,18 @@ void World_run(const World_t world) {
             Timer_reset(g_timer);
         }
 
-        if (Timer_is_ready(world->clock)) {
+        if (start) {
 
-            Timer_reset(world->clock);
+            if (Timer_is_ready(world->clock)) {
 
-            World_evolve(world);
+                Timer_reset(world->clock);
+
+                World_evolve(world);
+            }
+        }
+
+        if (Timer_is_ready(delay)) {
+            start = !start;
         }
     }
 
@@ -101,6 +114,8 @@ void World_edit(const World_t world) {
     SDL_Event e;
     int running = 1;
 
+    SDL_Rect rect = {.w = world->cell_size, .h = world->cell_size};             /* Cursor position */
+
     while (running) {
         Timer_tick(g_timer);
 
@@ -113,6 +128,23 @@ void World_edit(const World_t world) {
                     running = !running;
 
                     break ;
+
+                case SDL_MOUSEMOTION:
+
+                    SDL_GetMouseState(&rect.x, &rect.y);
+
+                    rect.x -= rect.x % rect.w;
+                    rect.y -= rect.y % rect.h;
+
+                    break ;
+
+                case SDL_MOUSEBUTTONDOWN:
+
+                    if (e.button.button == SDL_BUTTON_LEFT) {
+                        world->current[rect.y / rect.h][rect.x / rect.w] = !world->current[rect.y / rect.h][rect.x / rect.w];
+                    }
+
+                    break ;
             }
         }
 
@@ -121,6 +153,10 @@ void World_edit(const World_t world) {
             /* ======================= Background color ======================= */
             LilEn_set_colorRGB(world->bg_color[0], world->bg_color[1], world->bg_color[2], world->bg_color[3]);
             Window_clear(NULL);
+
+            /* =========================== On hover =========================== */
+            LilEn_set_colorRGB(world->c_color[0], world->c_color[1], world->c_color[2], 127);
+            LilEn_draw_rect(NULL, &rect);
 
             /* ========================== Cell color ========================== */
             LilEn_set_colorRGB(world->c_color[0], world->c_color[1], world->c_color[2], world->c_color[3]);

@@ -14,6 +14,8 @@ static char location[5 + BUFF] = "save/";               /* Final destination of 
 
 static int is_edit = 0;
 
+static int is_clean = 0;
+
 /* ================================================================ */
 
 int main(int argc, char** argv) {
@@ -38,8 +40,10 @@ int main(int argc, char** argv) {
         static struct option long_options[] = {
 
             {"save", required_argument, NULL, 0},
-            {"load", required_argument, NULL, 0},
-            {"edit", no_argument, NULL, 1},
+            {"load", required_argument, NULL, 1},
+            {"edit", no_argument, NULL, 2},
+            {"clean", no_argument, NULL, 3},
+            {NULL, 0, NULL, 4},
         };
 
         option = getopt_long(argc, argv, "-:", long_options, &option_index);
@@ -50,47 +54,64 @@ int main(int argc, char** argv) {
 
         switch (option) {
 
+            char* sub = NULL;
+
             case 0:
-                
+
                 if (optarg) {
 
-                    char* sub = NULL;       /* A container for `.json` part in a filename */
+                    strncpy(save_file, optarg, BUFF - JSONL);
 
-                    if (strcmp(long_options[option_index].name, "save") == 0) {
-                        strncpy(save_file, optarg, BUFF - JSONL);
-
-                        if ((sub = strstr(optarg, EXT)) == NULL) {
-                           
-                            strcat(save_file, EXT);
-                            save_file[strlen(save_file)] = '\0';
-                        }
-
+                    if ((sub = strstr(optarg, EXT)) == NULL) {
+                            
+                        strcat(save_file, EXT);
                         save_file[strlen(save_file)] = '\0';
                     }
-                    else if (strcmp(long_options[option_index].name, "load") == 0) {
-                        strncpy(load_file, optarg, BUFF - JSONL);
 
-                        if ((sub = strstr(optarg, EXT)) == NULL) {
-                           
-                            strcat(load_file, EXT);
-                            save_file[strlen(load_file)] = '\0';
-                        }
-
-                        load_file[strlen(load_file)] = '\0';
-
-                        strcat(location, load_file);
-                    }
+                    save_file[strlen(save_file)] = '\0';
                 }
 
                 break ;
 
             case 1:
+
+                if (optarg) {
+
+                    strncpy(load_file, optarg, BUFF - JSONL);
+
+                    if ((sub = strstr(optarg, EXT)) == NULL) {
+                            
+                        strcat(load_file, EXT);
+                        save_file[strlen(load_file)] = '\0';
+                    }
+
+                    load_file[strlen(load_file)] = '\0';
+
+                    strcat(location, load_file);
+                }
+
+                break ;
+
+            case 2:
                 is_edit = !is_edit;
 
                 break ;
 
+            case 3:
+                is_clean = !is_clean;
+
+                break ;
+
+            case 4:
+
             case ':':
                 printf("Missing option for %s\n", optarg);
+
+                break ;
+
+            case '?':
+                
+                printf("Unknown option %s\n", optarg);
 
                 break ;
         }
@@ -113,8 +134,6 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
-    world->edit = is_edit;
-
     if ((window = Window_new("Game of Life", world->width, world->height, SDL_WINDOW_SHOWN, SDL_RENDERER_ACCELERATED)) == NULL) {
 
         LilEn_print_error();
@@ -129,8 +148,11 @@ int main(int argc, char** argv) {
         World_load(location, world);
     }
 
-    if (world->edit) {
-        clear_2D_array(world->current, world->rows, world->columns, 0);
+    if (is_edit) {
+
+        if (is_clean) {
+            clear_2D_array(world->current, world->rows, world->columns, 0);
+        }
 
         World_edit(world);
     }
@@ -139,10 +161,19 @@ int main(int argc, char** argv) {
     }
 
     if (strlen(save_file) > 0) {
-        strcat(location, save_file);
 
+        /* Remove the old name */
+        memset(location, '\0', strlen(location));
+
+        /* Build a new save target */
+        strcat(location, "save/");
+        strcat(location, save_file);
+        
+        /* Save the World! */
         World_save(location, world);
     }
+
+    World_log(world);
 
     LilEn_quit();
 

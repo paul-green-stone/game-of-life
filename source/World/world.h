@@ -34,8 +34,6 @@ struct world {
     float rate;
 
     float percent;      /* How many cells to initialize at the start (%) */
-
-    int edit;           /* Enable editor */
 };
 
 typedef struct world World;

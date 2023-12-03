@@ -52,7 +52,6 @@ static const struct world WORLD  = {
     .rate = 10,
     .percent = PERCENT,
     .generation = 0,
-    .edit = 0,
 };
 
 #undef CELL
@@ -98,8 +97,6 @@ World_t World_new(void) {
     if ((world->previous = allocate_2D_array(world->rows, world->columns)) == NULL) {
         goto CLEANUP;
     }
-
-    Timer_set(world->clock, 1.0f / world->rate);
 
     if (world->percent > 0) {
         World_randomize(world, ((int) (world->width / world->cell_size) * (world->height / world->cell_size) * world->percent));
@@ -195,9 +192,6 @@ int World_load(const char* filename, const World_t w) {
     data = (cJSON*) Data_read("generation", root, cJSON_IsNumber);
     w->generation = (data) ? (size_t) data->valueint : WORLD.generation;
 
-    data = (cJSON*) Data_read("edit", root, cJSON_IsNumber);
-    w->edit = (data) ? data->valueint : WORLD.edit;
-
     /* ================================ */
     /* ====== READING GRID COLOR ====== */
     /* ================================ */
@@ -283,6 +277,8 @@ int World_load(const char* filename, const World_t w) {
     load_2D_array(root, "current", w->current, w->rows, w->columns);
 
     /* ================================ */
+
+    Timer_set(w->clock, 1.0 / w->rate);
 
     cJSON_Delete(root);
 
@@ -556,9 +552,6 @@ int World_save(const char* filename, const World_t w) {
     data = (data = cJSON_CreateNumber(w->percent)) ? data : NULL;
     cJSON_AddItemToObject(root, "percent", data);
 
-    data = (data = cJSON_CreateNumber(w->edit)) ? data : NULL;
-    cJSON_AddItemToObject(root, "edit", data);
-
     if ((array = cJSON_CreateArray()) == NULL) {
 
         fprintf(file, "%s", cJSON_Print(root));
@@ -619,7 +612,7 @@ int World_save(const char* filename, const World_t w) {
 
     if ((array = cJSON_CreateArray()) == NULL) {
 
-        fprintf(file, "%s", cJSON_Print(root));
+        fprintf(file, "%s", cJSON_Print(root)); 
 
         cJSON_Delete(root);
         fclose(file);
