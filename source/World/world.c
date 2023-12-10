@@ -177,7 +177,7 @@ int World_load(const char* filename, const World_t w) {
     w->percent = (data) ? data->valuedouble : WORLD.percent;
 
     /* ===================== Retrieving grid info ===================== */
-    data = (cJSON*) Data_read("grid", root, cJSON_IsNumber);
+    data = (cJSON*) Data_read("is_grid", root, cJSON_IsNumber);
     w->is_grid = (data) ? data->valueint : WORLD.is_grid;
 
     /* ===================== Retrieving grid rate ===================== */

@@ -20,14 +20,14 @@ void World_run(const World_t world) {
 
     /* ================================ */
 
-    font = Font_load("montserrat.regular.ttf", 16);
+    font = Font_load("montserrat.regular.ttf", 12);
 
     fps_text = Text_new("fps:", font);
     generation_text = Text_new("gen:", font);
 
     /* ================================ */
 
-    Timer_set(delay, 1.5);
+    Timer_set(delay, 3);
 
     while (running) {
         Timer_tick(g_timer);
