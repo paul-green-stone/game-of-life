@@ -102,6 +102,9 @@ void World_run(const World_t world) {
         }
     }
 
+    Text_destroy(&fps_text);
+    Text_destroy(&generation_text);
+
     Font_unload(font);
 
     return ;
