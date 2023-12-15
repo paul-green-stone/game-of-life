@@ -10,6 +10,28 @@
 /* ============================ STATIC ============================ */
 /* ================================================================ */
 
+static int array_max_index(unsigned char* array, size_t size) {
+
+    size_t i = 0;
+
+    int max = 0;
+
+    for (i = 0; i < size; i++) {
+        max = (array[i] > array[max]) ? (int) i : max;
+    }
+
+    return max;
+}
+
+static int World_get_color_modifers(unsigned char* array, int value) {
+
+    if (value) {
+        array[value - 1]++;
+    }
+
+    return 1;
+}
+
 static World_t _World_alloc(void) {
 
     World_t world = NULL;
@@ -45,13 +67,18 @@ static const struct world WORLD  = {
     .height = HEIGHT,
     .is_grid = 1,
     .g_color = {0, 0, 0, 25},
-    .c_color = {255, 0, 0, 255},
+    .c_color = {
+        {255, 0, 0, 255},   /* Red */
+        {0, 255, 0, 255},   /* Green */
+        {0, 0, 255, 255},   /* Blue */
+    },
     .bg_color = {255, 255, 255, 255},
     .text_color = {0, 0, 0, 127},
     .type = 1,
     .rate = 10,
     .percent = PERCENT,
     .generation = 0,
+    .colors = 3,
 };
 
 #undef CELL
@@ -132,6 +159,8 @@ int World_load(const char* filename, const World_t w) {
     /* A single piece of information extracted from a root */
     cJSON* data = NULL;
 
+    size_t i;
+
     if (filename == NULL) {
         return EXIT_FAILURE;
     }
@@ -193,24 +222,52 @@ int World_load(const char* filename, const World_t w) {
     w->generation = (data) ? (size_t) data->valueint : WORLD.generation;
 
     /* ================================ */
-    /* ====== READING GRID COLOR ====== */
+    /* ====== READING CELL COLOR ====== */
     /* ================================ */
 
     data = (cJSON*) Data_read("cell_color", root, cJSON_IsArray);
 
-    if (cJSON_GetArraySize(data) >= 4) {
+    if (data != NULL) {
 
-        w->c_color[0] = cJSON_GetArrayItem(data, 0)->valueint;
-        w->c_color[1] = cJSON_GetArrayItem(data, 1)->valueint;
-        w->c_color[2] = cJSON_GetArrayItem(data, 2)->valueint;
-        w->c_color[3] = cJSON_GetArrayItem(data, 3)->valueint;
+        /* Number of colors in the array of colors */
+        size_t number_of_colors = cJSON_GetArraySize(data);
+
+        w->colors = number_of_colors;
+
+        unsigned char base = 255;
+
+        for (i = 0; i < number_of_colors; i++) {
+
+            /* Get the current color */
+            cJSON* color = cJSON_GetArrayItem(data, i);
+
+            if (cJSON_GetArraySize(color) >= 4) {
+                w->c_color[i][0] = cJSON_GetArrayItem(color, 0)->valueint;
+                w->c_color[i][1] = cJSON_GetArrayItem(color, 1)->valueint;
+                w->c_color[i][2] = cJSON_GetArrayItem(color, 2)->valueint;
+                w->c_color[i][3] = cJSON_GetArrayItem(color, 3)->valueint;
+            }
+            else {
+                w->c_color[i][0] = base - 25;
+                w->c_color[i][1] = base - 25;
+                w->c_color[i][2] = base - 25;
+                w->c_color[i][3] = (base -= 25);
+            }
+
+            /* Up to 9 colors */
+            if (i == 8) {
+                break ;
+            }
+        }
     }
     else {
 
-        w->c_color[0] = WORLD.c_color[0];
-        w->c_color[1] = WORLD.c_color[1];
-        w->c_color[3] = WORLD.c_color[2];
-        w->c_color[2] = WORLD.c_color[3];
+        for (i = 0; i < WORLD.colors; i++) {
+            w->c_color[i][0] = WORLD.c_color[i][0];
+            w->c_color[i][1] = WORLD.c_color[i][1];
+            w->c_color[i][2] = WORLD.c_color[i][2];
+            w->c_color[i][3] = WORLD.c_color[i][3];
+        }
     }
 
     /* ================================ */
@@ -318,7 +375,6 @@ void World_log(const World_t w) {
 
     printf("%-16s: %s (%d)\n", "type", (w->type == 1) ? "wrap around" : (w->type == 2) ? "dead" : "alive", w->type);
 
-    printf("%-16s: [%d, %d, %d, %d]\n", "cell color", w->c_color[0], w->c_color[1], w->c_color[2], w->c_color[3]);
     printf("%-16s: [%d, %d, %d, %d]\n", "grid color", w->g_color[0], w->g_color[1], w->g_color[2], w->g_color[3]);
     printf("%-16s: [%d, %d, %d, %d]\n", "text color", w->text_color[0], w->text_color[1], w->text_color[2], w->text_color[3]);
     printf("%-16s: [%d, %d, %d, %d]\n", "BG color", w->bg_color[0], w->bg_color[1], w->bg_color[2], w->bg_color[3]);
@@ -379,6 +435,8 @@ void World_log_generation(const World_t w) {
 
 void World_present(const World_t world, const Window_t w) {
 
+    SDL_Color old_color = *g_color;
+
     size_t row, column;
     SDL_Rect cell = {.w = world->cell_size, .h = world->cell_size};
 
@@ -399,10 +457,15 @@ void World_present(const World_t world, const Window_t w) {
             cell.y = row * world->cell_size;
 
             if (world->current[row][column]) {
+
+                LilEn_set_colorRGB(world->c_color[world->current[row][column] - 1][0], world->c_color[world->current[row][column] - 1][1], world->c_color[world->current[row][column] - 1][2], world->c_color[world->current[row][column] - 1][3]);
+
                 LilEn_draw_rect(w, &cell);
             }
         }
     }
+
+    LilEn_set_colorRGB(old_color.r, old_color.g, old_color.b, old_color.a);
 
     return ;
 }
@@ -431,7 +494,7 @@ void World_randomize(const World_t w, int c) {
         row = RAND_RANGE(0, w->rows - 1);
         column = RAND_RANGE(0, w->columns - 1);
 
-        w->current[row][column] = 1;
+        w->current[row][column] = 1 + RAND_RANGE(0, w->colors);
     }
 
     return ;
@@ -450,6 +513,11 @@ void World_evolve(const World_t w) {
     /* Accumulator */
     int acc = 0;
 
+    unsigned char modifiers[w->colors];
+
+    /* After some time I found that my system put garbage into the array */
+    memset(modifiers, 0, w->colors);
+
     if (w == NULL) { 
         return ;
     }
@@ -462,36 +530,39 @@ void World_evolve(const World_t w) {
     for (row = 0; row < rows; row++) {
 
         for (column = 0; column < columns; column++) {
-
+            
+            /* We are comparing here against the presence of a live cell */
             acc 
-                = w->previous[(row - 1 < 0) ? rows - 1 : row - 1][column]
-                + w->previous[(row - 1 < 0) ? rows - 1 : row - 1][(column + 1 >= columns) ? 0 : column + 1]
-                + w->previous[row][(column + 1 >= columns) ? 0 : column + 1]
-                + w->previous[(row + 1 >= rows) ? 0 : row + 1][(column + 1 >= columns) ? 0 : column + 1]
-                + w->previous[(row + 1 >= rows) ? 0 : row + 1][column]
-                + w->previous[(row + 1 >= rows) ? 0 : row + 1][(column - 1 < 0) ? columns - 1 : column - 1]
-                + w->previous[row][((column - 1 <= 0) ? columns - 1 : column - 1)]
-                + w->previous[(row - 1 < 0) ? rows - 1 : row - 1][(column - 1 < 0) ? columns - 1 : column - 1];
+                = (w->previous[(row - 1 < 0) ? rows - 1 : row - 1][column] > 0 && World_get_color_modifers(modifiers, w->previous[(row - 1 < 0) ? rows - 1 : row - 1][column]))
+                + (w->previous[(row - 1 < 0) ? rows - 1 : row - 1][(column + 1 >= columns) ? 0 : column + 1] > 0 && World_get_color_modifers(modifiers, w->previous[(row - 1 < 0) ? rows - 1 : row - 1][(column + 1 >= columns) ? 0 : column + 1]))
+                + (w->previous[row][(column + 1 >= columns) ? 0 : column + 1] > 0 && World_get_color_modifers(modifiers, w->previous[row][(column + 1 >= columns) ? 0 : column + 1]))
+                + (w->previous[(row + 1 >= rows) ? 0 : row + 1][(column + 1 >= columns) ? 0 : column + 1] > 0 && World_get_color_modifers(modifiers, w->previous[(row + 1 >= rows) ? 0 : row + 1][(column + 1 >= columns) ? 0 : column + 1]))
+                + (w->previous[(row + 1 >= rows) ? 0 : row + 1][column] > 0 && World_get_color_modifers(modifiers, w->previous[(row + 1 >= rows) ? 0 : row + 1][column]))
+                + (w->previous[(row + 1 >= rows) ? 0 : row + 1][(column - 1 < 0) ? columns - 1 : column - 1] > 0 && World_get_color_modifers(modifiers, w->previous[(row + 1 >= rows) ? 0 : row + 1][(column - 1 < 0) ? columns - 1 : column - 1]))
+                + (w->previous[row][((column - 1 <= 0) ? columns - 1 : column - 1)] > 0 && World_get_color_modifers(modifiers, w->previous[row][((column - 1 <= 0) ? columns - 1 : column - 1)]))
+                + (w->previous[(row - 1 < 0) ? rows - 1 : row - 1][(column - 1 < 0) ? columns - 1 : column - 1] > 0 && World_get_color_modifers(modifiers, w->previous[(row - 1 < 0) ? rows - 1 : row - 1][(column - 1 < 0) ? columns - 1 : column - 1]));
             
             /* Any live cell with fewer than two live neighbours dies, as if by underpopulation. */
-            if (w->previous[row][column] == 1 && acc < 2) {
+            if (w->previous[row][column] > 0 && acc < 2) {
                 w->current[row][column] = 0;
             }
             /* Any live cell with two or three live neighbours lives on to the next generation. */
-            else if ((w->previous[row][column] == 1) && (acc == 2 || 2 == 3)) {
-                w->current[row][column] = 1;
+            else if ((w->previous[row][column] > 0) && (acc == 2 || acc == 3)) {
+                w->current[row][column] = 1 + array_max_index(modifiers, w->colors);
             }
             /* Any live cell with more than three live neighbours dies, as if by overpopulation. */
-            else if (w->previous[row][column] == 1 && acc > 3) {
+            else if (w->previous[row][column] > 0 && acc > 3) {
                 w->current[row][column] = 0;
             }
             /* Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction. */
-            else if (w->previous[row][column] == 0 && acc == 3) {
-                w->current[row][column] = 1;
+            else if (w->previous[row][column] < 1 && acc == 3) {
+                w->current[row][column] = 1 + array_max_index(modifiers, w->colors);
             }
             else {
-                w->current[row][column]= w->previous[row][column];
+                w->current[row][column] = w->previous[row][column];
             }
+
+            memset(modifiers, 0, w->colors);
         }
     }
 
@@ -552,6 +623,11 @@ int World_save(const char* filename, const World_t w) {
     data = (data = cJSON_CreateNumber(w->percent)) ? data : NULL;
     cJSON_AddItemToObject(root, "percent", data);
 
+    /* ================================ */
+    /* ====== SAVING CELL COLOR ======= */
+    /* ================================ */
+
+    /* Create the main array */
     if ((array = cJSON_CreateArray()) == NULL) {
 
         fprintf(file, "%s", cJSON_Print(root));
@@ -562,10 +638,29 @@ int World_save(const char* filename, const World_t w) {
         return EXIT_FAILURE;
     }
 
-    for (i = 0; i < sizeof(w->c_color) / (sizeof(w->c_color[0])); i++) {
+    /* For every color in the main array */
+    for (i = 0; i < w->colors; i++) {
 
-        data = (data = cJSON_CreateNumber(w->c_color[i])) ? data : NULL;
-        cJSON_AddItemToArray(array, data);
+        /* Create an array to store a single color */
+        cJSON* color = cJSON_CreateArray();
+        
+        /* Rewd component */
+        data = (data = cJSON_CreateNumber(w->c_color[i][0])) ? data : NULL;
+        cJSON_AddItemToArray(color, data);
+        
+        /* Green component */
+        data = (data = cJSON_CreateNumber(w->c_color[i][1])) ? data : NULL;
+        cJSON_AddItemToArray(color, data);
+
+        /* Blue component */
+        data = (data = cJSON_CreateNumber(w->c_color[i][2])) ? data : NULL;
+        cJSON_AddItemToArray(color, data);
+
+        /* Alpha component */
+        data = (data = cJSON_CreateNumber(w->c_color[i][3])) ? data : NULL;
+        cJSON_AddItemToArray(color, data);
+
+        cJSON_AddItemToArray(array, color);
     }
 
     cJSON_AddItemToObject(root, "cell_color", array);

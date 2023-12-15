@@ -2,6 +2,7 @@
 
 /* ================================================================ */
 
+
 void World_run(const World_t world) {
 
     SDL_Event e;
@@ -53,7 +54,6 @@ void World_run(const World_t world) {
             Window_clear(NULL);
 
             /* ========================== Cell color ========================== */
-            LilEn_set_colorRGB(world->c_color[0], world->c_color[1], world->c_color[2], world->c_color[3]);
             World_present(world, NULL);
 
             /* ========================= Grid drawing ========================= */
@@ -119,6 +119,15 @@ void World_edit(const World_t world) {
 
     SDL_Rect rect = {.w = world->cell_size, .h = world->cell_size};             /* Cursor position */
 
+    SDL_Color current_cell_color = {
+        .r = world->c_color[0][0],
+        .g = world->c_color[0][1],
+        .b = world->c_color[0][2],
+        .a = world->c_color[0][3],
+    };
+
+    unsigned char modifier = 0;
+
     while (running) {
         Timer_tick(g_timer);
 
@@ -144,7 +153,41 @@ void World_edit(const World_t world) {
                 case SDL_MOUSEBUTTONDOWN:
 
                     if (e.button.button == SDL_BUTTON_LEFT) {
-                        world->current[rect.y / rect.h][rect.x / rect.w] = !world->current[rect.y / rect.h][rect.x / rect.w];
+                        world->current[rect.y / rect.h][rect.x / rect.w] = (world->current[rect.y / rect.h][rect.x / rect.w] == 0) ? 1 + modifier : 0;
+                    }
+
+                    break ;
+
+                case SDL_KEYDOWN:
+
+                    if (e.key.repeat == 0) {
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_1) {
+                            
+                            if (world->colors >= 1) {
+                                current_cell_color = (SDL_Color) {world->c_color[0][0], world->c_color[0][1], world->c_color[0][2], world->c_color[0][3]};
+
+                                modifier = 0;
+                            }
+                        }
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_2) {
+                            
+                            if (world->colors >= 2) {
+                                current_cell_color = (SDL_Color) {world->c_color[1][0], world->c_color[1][1], world->c_color[1][2], world->c_color[1][3]};
+
+                                modifier = 1;
+                            }
+                        }
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_3) {
+                            
+                            if (world->colors >= 2) {
+                                current_cell_color = (SDL_Color) {world->c_color[2][0], world->c_color[2][1], world->c_color[2][2], world->c_color[2][3]};
+
+                                modifier = 2;
+                            }
+                        }
                     }
 
                     break ;
@@ -158,11 +201,11 @@ void World_edit(const World_t world) {
             Window_clear(NULL);
 
             /* =========================== On hover =========================== */
-            LilEn_set_colorRGB(world->c_color[0], world->c_color[1], world->c_color[2], 127);
+            LilEn_set_colorRGB(current_cell_color.r, current_cell_color.g, current_cell_color.b, 127);
             LilEn_draw_rect(NULL, &rect);
 
             /* ========================== Cell color ========================== */
-            LilEn_set_colorRGB(world->c_color[0], world->c_color[1], world->c_color[2], world->c_color[3]);
+            LilEn_set_colorRGB(current_cell_color.r, current_cell_color.g, current_cell_color.b, current_cell_color.a);
             World_present(world, NULL);
 
             /* ========================= Grid drawing ========================= */

@@ -17,7 +17,8 @@ struct world {
 
     int is_grid;        /* Decide whether the world grid is displayed or not */
 
-    unsigned char c_color[4];       /* Color of a live cell */
+    size_t colors;                  /* Number opf colors tha tcan be used to represent a live cell */
+    unsigned char c_color[9][4];       /* Color of a live cell */
     unsigned char g_color[4];       /* Grid color */
     unsigned char bg_color[4];      /* Background color */
     unsigned char text_color[4];    /* Text color */
