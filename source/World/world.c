@@ -6,23 +6,54 @@
 /* Maximum filename size */
 #define MAX_FILENAME 32
 
+#define LOCAL_BUF_SIZE 16
+
 /* ================================================================ */
 /* ============================ STATIC ============================ */
 /* ================================================================ */
 
 static int array_max_index(unsigned char* array, size_t size) {
 
+    struct {
+        unsigned char buffer[LOCAL_BUF_SIZE];
+        unsigned short size;
+        unsigned short current_position;
+    } buffer = {
+        .size = 0,
+        .current_position = 0,
+    };
+
+    /* Loop variable */
     size_t i = 0;
 
+    /* Index that contains the maximum array value */
     int max = 0;
-
+    
     for (i = 0; i < size; i++) {
         max = (array[i] > array[max]) ? (int) i : max;
+    }
+
+    for (i = 0; i < size; i++) {
+
+        if (array[i] == array[max]) {
+            buffer.buffer[buffer.current_position++] = i;
+            buffer.size++;
+        }
+    }
+
+    if (buffer.size > 1) {
+        max = buffer.buffer[RAND_RANGE(0, buffer.size - 1)];
     }
 
     return max;
 }
 
+/**
+ * `value` is the cell value. If the cell is greater than 0, it means it's alive.
+ * If we subtract 1 from a live cell, we get its color modifier. The size of the array
+ * is determined by the number of colors available in the current application run; a user shouldn't
+ * set it manually. The function stores a color modifier in the array
+*/
 static int World_get_color_modifers(unsigned char* array, int value) {
 
     if (value) {

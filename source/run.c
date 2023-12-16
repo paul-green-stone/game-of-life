@@ -188,6 +188,60 @@ void World_edit(const World_t world) {
                                 modifier = 2;
                             }
                         }
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_4) {
+                            
+                            if (world->colors >= 3) {
+                                current_cell_color = (SDL_Color) {world->c_color[3][0], world->c_color[3][1], world->c_color[3][2], world->c_color[3][3]};
+
+                                modifier = 3;
+                            }
+                        }
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_5) {
+                            
+                            if (world->colors >= 4) {
+                                current_cell_color = (SDL_Color) {world->c_color[4][0], world->c_color[4][1], world->c_color[4][2], world->c_color[4][3]};
+
+                                modifier = 4;
+                            }
+                        }
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_6) {
+                            
+                            if (world->colors >= 5) {
+                                current_cell_color = (SDL_Color) {world->c_color[5][0], world->c_color[5][1], world->c_color[5][2], world->c_color[5][3]};
+
+                                modifier = 5;
+                            }
+                        }
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_7) {
+                            
+                            if (world->colors >= 6) {
+                                current_cell_color = (SDL_Color) {world->c_color[6][0], world->c_color[6][1], world->c_color[6][2], world->c_color[6][3]};
+
+                                modifier = 6;
+                            }
+                        }
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_8) {
+                            
+                            if (world->colors >= 7) {
+                                current_cell_color = (SDL_Color) {world->c_color[7][0], world->c_color[7][1], world->c_color[7][2], world->c_color[7][3]};
+
+                                modifier = 7;
+                            }
+                        }
+
+                        if (e.key.keysym.scancode == SDL_SCANCODE_9) {
+                            
+                            if (world->colors >= 8) {
+                                current_cell_color = (SDL_Color) {world->c_color[8][0], world->c_color[8][1], world->c_color[8][2], world->c_color[8][3]};
+
+                                modifier = 8;
+                            }
+                        }
                     }
 
                     break ;
